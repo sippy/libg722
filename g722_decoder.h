@@ -25,7 +25,7 @@
 /*! \file */
 
 #if !defined(_G722_DECODER_H_)
-#define _G722_DECODER__H_
+#define _G722_DECODER_H_
 
 #include "g722.h"
 
