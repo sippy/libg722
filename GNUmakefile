@@ -27,5 +27,7 @@ test: test.c libg722.a
 	${CC} ${CFLAGS} -o test test.c libg722.a -lm
 
 install:
-	install libg722.a ${LIBDIR}
-	install ${SRCS_H} ${INCLUDEDIR}
+	install -d ${DESTDIR}${LIBDIR}
+	install libg722.a ${DESTDIR}${LIBDIR}
+	install -d ${DESTDIR}${INCLUDEDIR}
+	install ${SRCS_H} ${DESTDIR}${INCLUDEDIR}
