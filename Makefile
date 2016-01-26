@@ -15,6 +15,9 @@ CFLAGS+= -I${.CURDIR} ${PICFLAG}
 CLEANFILES+=test test.raw
 
 test: test.c lib${LIB}.a
-	${CC} ${CFLAGS} -o test test.c lib${LIB}.a -lm
+	rm -f ${.CURDIR}/test.raw
+	${CC} ${CFLAGS} -o ${.CURDIR}/test test.c lib${LIB}.a -lm
+	${.CURDIR}/test
+	sha256 test.raw | diff ${.CURDIR}/test.checksum -
 
 .include <bsd.lib.mk>
