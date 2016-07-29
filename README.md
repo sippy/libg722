@@ -25,7 +25,7 @@ Librarized by Sippy Software, Inc.
 
 ## License
 
-This code is mostly Public Domail. Library initialization/management is
-under BSD 2-clause license.
+This code is mostly Public Domail. Library test code is under BSD 2-clause
+license.
 
 See LICENSE for copyright details and each individual file for specifics.
