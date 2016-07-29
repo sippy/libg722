@@ -17,6 +17,11 @@
  * Copyright (c) CMU 1993
  * Computer Science, Speech Group
  * Chengxiang Lu and Alex Hauptmann
+ * 
+ * The Carnegie Mellon ADPCM program is Copyright (c) 1993 by Carnegie Mellon
+ * University. Use of this program, for any research or commercial purpose, is
+ * completely unrestricted. If you make use of or redistribute this material,
+ * we would appreciate acknowlegement of its origin.
  *
  * $Id: g722_decode.c,v 1.2 2012/08/12 08:06:58 sobomax Exp $
  */

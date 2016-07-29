@@ -1,6 +1,4 @@
 /*
- * SpanDSP - a series of DSP components for telephony
- *
  * g722_encode.c - The ITU G.722 codec, encode part.
  *
  * Written by Steve Underwood <steveu@coppice.org>
@@ -19,6 +17,12 @@
  *****    Copyright (c) CMU    1993      *****
  * Computer Science, Speech Group
  * Chengxiang Lu and Alex Hauptmann
+ *
+ * The Carnegie Mellon ADPCM program is Copyright (c) 1993 by Carnegie Mellon
+ * University. Use of this program, for any research or commercial purpose, is
+ * completely unrestricted. If you make use of or redistribute this material,
+ * we would appreciate acknowlegement of its origin.
+ *****
  *
  * $Id: g722_encode.c,v 1.1 2012/08/07 11:33:45 sobomax Exp $
  */
