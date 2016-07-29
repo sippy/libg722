@@ -1,6 +1,4 @@
 /*
- * SpanDSP - a series of DSP components for telephony
- *
  * g722.h - The ITU G.722 codec.
  *
  * Written by Steve Underwood <steveu@coppice.org>
