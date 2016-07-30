@@ -55,6 +55,6 @@ install:
 	install -d ${DESTDIR}${LIBDIR}
 	install libg722.a ${DESTDIR}${LIBDIR}
 	install libg722.so.0 ${DESTDIR}${LIBDIR}
-	ln -sf ${DESTDIR}${LIBDIR}/libg722.so.0 ${DESTDIR}${LIBDIR}/libg722.so
+	ln -sf libg722.so.0 ${DESTDIR}${LIBDIR}/libg722.so
 	install -d ${DESTDIR}${INCLUDEDIR}
 	install ${SRCS_H} ${DESTDIR}${INCLUDEDIR}
