@@ -1,0 +1,9 @@
+LIBG722_20160729174323 {
+    g722_encoder_new;
+    g722_encoder_destroy;
+    g722_encode;
+
+    g722_decoder_new;
+    g722_decoder_destroy;
+    g722_decode;
+};

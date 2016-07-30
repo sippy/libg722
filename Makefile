@@ -12,6 +12,10 @@ INCS=	g722.h g722_private.h g722_encoder.h g722_decoder.h
 WARNS?=	2
 CFLAGS+= -I${.CURDIR} ${PICFLAG}
 
+VERSION_DEF=	${.CURDIR}/ld_sugar/Versions.def
+SYMBOL_MAPS=	${.CURDIR}/ld_sugar/Symbol.map
+CFLAGS+=	-DSYMBOL_VERSIONING
+
 TEST_OUT_FILES=	test.raw test.raw.16k pcminb.g722 pcminb.raw.16k \
     test.g722.out
 
