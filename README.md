@@ -19,13 +19,13 @@ from the Speech Group, School of Computer Science, Carnegie Mellon University,
 to be fairly fast and efficient, while retaining high fidelity.
 
 Steve Underwood <steveu@coppice.org> improved the code a lot later on and
-contrubuted it into several popular open source projects.
+contributed it into several popular open source projects.
 
 Librarized by Sippy Software, Inc.
 
 ## License
 
-This code is mostly Public Domail. Library test code is under BSD 2-clause
+This code is mostly Public Domain. Library test code is under BSD 2-clause
 license.
 
 See LICENSE for copyright details and each individual file for specifics.
