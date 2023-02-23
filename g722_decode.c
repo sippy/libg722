@@ -385,8 +385,8 @@ int g722_decode(G722_DEC_CTX *s, const uint8_t g722_data[], int len, int16_t amp
                     xout2 += s->x[2*i]*qmf_coeffs[i];
                     xout1 += s->x[2*i + 1]*qmf_coeffs[11 - i];
                 }
-                amp[outlen++] = (int16_t) (xout1 >> 11);
-                amp[outlen++] = (int16_t) (xout2 >> 11);
+                amp[outlen++] = saturate(xout1 >> 11);
+                amp[outlen++] = saturate(xout2 >> 11);
             }
         }
     }
