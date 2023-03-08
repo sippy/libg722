@@ -14,7 +14,7 @@ OBJS = $(SRCS_C:.c=.o)
 OBJS_PIC = $(SRCS_C:.c=.So)
 
 TEST_OUT_FILES= test.raw test.raw.16k pcminb.g722 pcminb.raw.16k \
-    test.g722.out
+    test.g722.out fullscale.raw
 
 all: libg722.a libg722.so.0 libg722.so
 
@@ -48,7 +48,9 @@ test: test.c libg722.a libg722.so.0
 	    pcminb.g722 pcminb.raw.16k
 	LD_LIBRARY_PATH=. ./$@ --enc test.raw \
 	    test.g722.out
-	sha256 ${TEST_OUT_FILES} | \
+	LD_LIBRARY_PATH=. ./$@ --sln16k \
+		fullscale.g722 fullscale.raw
+	sha256sum ${TEST_OUT_FILES} | \
 	    diff test.checksum -
 
 install:
