@@ -17,11 +17,11 @@ SYMBOL_MAPS=	${.CURDIR}/ld_sugar/Symbol.map
 CFLAGS+=	-DSYMBOL_VERSIONING
 
 TEST_OUT_FILES=	test.raw test.raw.16k pcminb.g722 pcminb.raw.16k \
-    test.g722.out
+    test.g722.out fullscale.raw
 
 CLEANFILES+=test ${TEST_OUT_FILES}
 
-test: test.c lib${LIB}.a lib${LIB}.so.${SHLIB_MAJOR} test.g722 pcminb.dat Makefile
+test: test.c lib${LIB}.a lib${LIB}.so.${SHLIB_MAJOR} test.g722 fullscale.raw pcminb.dat Makefile
 	rm -f ${TEST_OUT_FILES}
 	${CC} ${CFLAGS} -o ${.TARGET} test.c -lm -L. -l${LIB}
 	LD_LIBRARY_PATH=${.CURDIR} ${.CURDIR}/${.TARGET} test.g722 test.raw
@@ -33,6 +33,8 @@ test: test.c lib${LIB}.a lib${LIB}.so.${SHLIB_MAJOR} test.g722 pcminb.dat Makefi
 	    pcminb.g722 pcminb.raw.16k
 	LD_LIBRARY_PATH=${.CURDIR} ${.CURDIR}/${.TARGET} --enc test.raw \
 	    test.g722.out
+	LD_LIBRARY_PATH=${.CURDIR} ${.CURDIR}/${.TARGET} --sln16k \
+		fullscale.g722 fullscale.raw
 	sha256 ${TEST_OUT_FILES} | \
 	    diff test.checksum -
 
