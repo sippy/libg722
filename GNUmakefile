@@ -13,9 +13,6 @@ CFLAGS?= -O2 -pipe
 OBJS = $(SRCS_C:.c=.o)
 OBJS_PIC = $(SRCS_C:.c=.So)
 
-TEST_OUT_FILES= test.raw test.raw.16k pcminb.g722 pcminb.raw.16k \
-    test.g722.out fullscale.raw
-
 all: libg722.a libg722.so.0 libg722.so
 
 libg722.a: $(OBJS) $(SRCS_H)
@@ -35,23 +32,11 @@ libg722.so: libg722.so.0
 	$(CC) -fpic -DPIC -c $(CFLAGS) $< -o $@
 
 clean:
-	rm -f libg722.a libg722.so.0 $(OBJS) $(OBJS_PIC) test $(TEST_OUT_FILES)
+	rm -f libg722.a libg722.so.0 $(OBJS) $(OBJS_PIC) test *.out
 
 test: test.c libg722.a libg722.so.0
 	${CC} ${CFLAGS} -o $@ test.c -lm -L. -lg722
-	LD_LIBRARY_PATH=. ./$@ test.g722 test.raw
-	LD_LIBRARY_PATH=. ./$@ --sln16k test.g722 \
-	    test.raw.16k
-	LD_LIBRARY_PATH=. ./$@ --enc --sln16k --bend \
-	    pcminb.dat pcminb.g722
-	LD_LIBRARY_PATH=. ./$@ --sln16k --bend \
-	    pcminb.g722 pcminb.raw.16k
-	LD_LIBRARY_PATH=. ./$@ --enc test.raw \
-	    test.g722.out
-	LD_LIBRARY_PATH=. ./$@ --sln16k \
-	    fullscale.g722 fullscale.raw
-	sha256sum ${TEST_OUT_FILES} | \
-	    diff test.checksum -
+	LD_LIBRARY_PATH=. ./scripts/do-test.sh ./$@
 
 install:
 	install -d ${DESTDIR}${LIBDIR}

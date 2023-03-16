@@ -16,26 +16,13 @@ VERSION_DEF=	${.CURDIR}/ld_sugar/Versions.def
 SYMBOL_MAPS=	${.CURDIR}/ld_sugar/Symbol.map
 CFLAGS+=	-DSYMBOL_VERSIONING
 
-TEST_OUT_FILES=	test.raw test.raw.16k pcminb.g722 pcminb.raw.16k \
-    test.g722.out fullscale.raw
+CLEANFILES+=test *.out
 
-CLEANFILES+=test ${TEST_OUT_FILES}
+TDDIR=	${.CURDIR}/test_data
 
-test: test.c lib${LIB}.a lib${LIB}.so.${SHLIB_MAJOR} test.g722 fullscale.raw pcminb.dat Makefile
+test: test.c lib${LIB}.a lib${LIB}.so.${SHLIB_MAJOR} ${TDDIR}/fullscale.g722 ${TDDIR}/pcminb.dat ${TDDIR}/test.checksum ${TDDIR}/test.g722 Makefile
 	rm -f ${TEST_OUT_FILES}
 	${CC} ${CFLAGS} -o ${.TARGET} test.c -lm -L. -l${LIB}
-	LD_LIBRARY_PATH=${.CURDIR} ${.CURDIR}/${.TARGET} test.g722 test.raw
-	LD_LIBRARY_PATH=${.CURDIR} ${.CURDIR}/${.TARGET} --sln16k test.g722 \
-	    test.raw.16k
-	LD_LIBRARY_PATH=${.CURDIR} ${.CURDIR}/${.TARGET} --enc --sln16k --bend \
-	    pcminb.dat pcminb.g722
-	LD_LIBRARY_PATH=${.CURDIR} ${.CURDIR}/${.TARGET} --sln16k --bend \
-	    pcminb.g722 pcminb.raw.16k
-	LD_LIBRARY_PATH=${.CURDIR} ${.CURDIR}/${.TARGET} --enc test.raw \
-	    test.g722.out
-	LD_LIBRARY_PATH=${.CURDIR} ${.CURDIR}/${.TARGET} --sln16k \
-	    fullscale.g722 fullscale.raw
-	sha256sum ${TEST_OUT_FILES} | \
-	    diff test.checksum -
+	LD_LIBRARY_PATH=${.CURDIR} ${.CURDIR}/scripts/do-test.sh ${.CURDIR}/${.TARGET}
 
 .include <bsd.lib.mk>
