@@ -22,10 +22,13 @@
 
 /*! \file */
 
-#if !defined(_G722_ENCODER_H_)
-#define _G722_ENCODER_H_
+#pragma once
 
 #include "g722.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #ifndef _G722_ENC_CTX_DEFINED
 typedef void G722_ENC_CTX;
@@ -36,4 +39,6 @@ G722_ENC_CTX *g722_encoder_new(int rate, int options);
 int g722_encoder_destroy(G722_ENC_CTX *s);
 int g722_encode(G722_ENC_CTX *s, const int16_t amp[], int len, uint8_t g722_data[]);
 
+#ifdef __cplusplus
+}
 #endif

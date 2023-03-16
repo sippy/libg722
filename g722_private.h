@@ -22,8 +22,7 @@
 
 /*! \file */
 
-#if !defined(_G722_PRIVATE_H_)
-#define _G722_PRIVATE_H_
+#pragma once
 
 /*! \page g722_page G.722 encoding and decoding
 \section g722_page_sec_1 What does it do?
@@ -118,5 +117,3 @@ struct g722_decode_state
     unsigned int out_buffer;
     int out_bits;
 };
-
-#endif

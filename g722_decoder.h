@@ -22,10 +22,13 @@
 
 /*! \file */
 
-#if !defined(_G722_DECODER_H_)
-#define _G722_DECODER_H_
+#pragma once
 
 #include "g722.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #ifndef _G722_DEC_CTX_DEFINED
 typedef void G722_DEC_CTX;
@@ -36,4 +39,6 @@ G722_DEC_CTX *g722_decoder_new(int rate, int options);
 int g722_decoder_destroy(G722_DEC_CTX *s);
 int g722_decode(G722_DEC_CTX *s, const uint8_t g722_data[], int len, int16_t amp[]);
 
+#ifdef __cplusplus
+}
 #endif

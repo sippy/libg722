@@ -8,15 +8,8 @@
  * @copyright Copyright (c) 2022
  *
  */
-#pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#pragma once
 
 #include "g722_encoder.h"
 #include "g722_decoder.h"
-
-#ifdef __cplusplus
-}
-#endif
