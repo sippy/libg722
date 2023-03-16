@@ -8,7 +8,7 @@ INCLUDEDIR= ${PREFIX}/include
 SRCS_C= g722_decode.c g722_encode.c
 SRCS_H= g722.h g722_private.h g722_encoder.h g722_decoder.h
 
-CFLAGS?= -O2 -pipe
+CFLAGS?= -O2 -pipe -Wno-attributes
 
 OBJS = $(SRCS_C:.c=.o)
 OBJS_PIC = $(SRCS_C:.c=.So)

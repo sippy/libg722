@@ -10,7 +10,7 @@ MAN=
 SRCS=	g722_decode.c g722_encode.c
 INCS=	g722.h g722_private.h g722_encoder.h g722_decoder.h
 WARNS?=	2
-CFLAGS+= -I${.CURDIR} ${PICFLAG}
+CFLAGS+= -I${.CURDIR} ${PICFLAG} -Wno-attributes
 
 VERSION_DEF=	${.CURDIR}/ld_sugar/Versions.def
 SYMBOL_MAPS=	${.CURDIR}/ld_sugar/Symbol.map
@@ -26,3 +26,6 @@ test: test.c lib${LIB}.a lib${LIB}.so.${SHLIB_MAJOR} ${TDDIR}/fullscale.g722 ${T
 	LD_LIBRARY_PATH=${.CURDIR} ${.CURDIR}/scripts/do-test.sh ${.CURDIR}/${.TARGET}
 
 .include <bsd.lib.mk>
+
+# XXX: fix ld error on Linux
+LD_shared:=	${LD_shared:S/-soname /-soname=/}
