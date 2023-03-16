@@ -4,7 +4,7 @@ LIB=	g722
 SHLIB_MAJOR=	0
 PREFIX?= /usr/local
 LIBDIR= ${PREFIX}/lib
-NO_PROFILE=	YES
+MK_PROFILE=	no
 INCLUDEDIR= ${PREFIX}/include
 MAN=
 SRCS=	g722_decode.c g722_encode.c
@@ -34,8 +34,8 @@ test: test.c lib${LIB}.a lib${LIB}.so.${SHLIB_MAJOR} test.g722 fullscale.raw pcm
 	LD_LIBRARY_PATH=${.CURDIR} ${.CURDIR}/${.TARGET} --enc test.raw \
 	    test.g722.out
 	LD_LIBRARY_PATH=${.CURDIR} ${.CURDIR}/${.TARGET} --sln16k \
-		fullscale.g722 fullscale.raw
-	sha256 ${TEST_OUT_FILES} | \
+	    fullscale.g722 fullscale.raw
+	sha256sum ${TEST_OUT_FILES} | \
 	    diff test.checksum -
 
 .include <bsd.lib.mk>

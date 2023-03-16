@@ -49,7 +49,7 @@ test: test.c libg722.a libg722.so.0
 	LD_LIBRARY_PATH=. ./$@ --enc test.raw \
 	    test.g722.out
 	LD_LIBRARY_PATH=. ./$@ --sln16k \
-		fullscale.g722 fullscale.raw
+	    fullscale.g722 fullscale.raw
 	sha256sum ${TEST_OUT_FILES} | \
 	    diff test.checksum -
 
