@@ -30,8 +30,27 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
 
-      - name: Build
-        run: make all
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bmake cmake
 
-      - name: Test
+      - name: Build with GNU Make
+        run: make clean all
+
+      - name: Test with GNU Make
         run: make test
+
+      - name: Build with BSD Make
+        run: bmake clean all
+
+      - name: Test with BSD Make
+        run: bmake test
+
+      - name: Build with CMake
+        run: |
+          cmake -B build
+          make -C build clean all
+
+      - name: Test with CMake
+        run: bmake -C build test
