@@ -58,7 +58,9 @@ static __inline__ int16_t saturate(int32_t amp)
 }
 /*- End of function --------------------------------------------------------*/
 
-static void block4(G722_ENC_CTX *s, int band, int d)
+static void block4(G722_ENC_CTX *, int, int) __attribute__((always_inline));
+
+static __attribute__((always_inline)) void block4(G722_ENC_CTX *s, int band, int d)
 {
     int wd1;
     int wd2;
