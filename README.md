@@ -1,5 +1,7 @@
 # libg722
 
+[![Build & Test](https://github.com/sippy/libg722/actions/workflows/build_and_test.yml/badge.svg)](https://github.com/sippy/libg722/actions/workflows/build_and_test.yml)
+
 ## Introduction
 
 The G.722 module is a bit exact implementation of the ITU G.722 specification
