@@ -22,8 +22,6 @@
  * University. Use of this program, for any research or commercial purpose, is
  * completely unrestricted. If you make use of or redistribute this material,
  * we would appreciate acknowlegement of its origin.
- *
- * $Id: g722_decode.c,v 1.2 2012/08/12 08:06:58 sobomax Exp $
  */
 
 /*! \file */
@@ -33,121 +31,10 @@
 #include <memory.h>
 #include <stdlib.h>
 
-#include "g722.h"
 #include "g722_private.h"
-
-#if !defined(FALSE)
-#define FALSE 0
-#endif
-#if !defined(TRUE)
-#define TRUE (!FALSE)
-#endif
-
-static __inline__ int16_t saturate(int32_t amp)
-{
-    int16_t amp16;
-
-    /* Hopefully this is optimised for the common case - not clipping */
-    amp16 = (int16_t) amp;
-    if (amp == amp16)
-        return amp16;
-    if (amp > INT16_MAX)
-        return  INT16_MAX;
-    return  INT16_MIN;
-}
-/*- End of function --------------------------------------------------------*/
-
-static void block4(G722_DEC_CTX *, int, int) __attribute__((always_inline));
-
-static void block4(G722_DEC_CTX *s, int band, int d)
-{
-    int wd1;
-    int wd2;
-    int wd3;
-    int i;
-
-    /* Block 4, RECONS */
-    s->band[band].d[0] = d;
-    s->band[band].r[0] = saturate(s->band[band].s + d);
-
-    /* Block 4, PARREC */
-    s->band[band].p[0] = saturate(s->band[band].sz + d);
-
-    /* Block 4, UPPOL2 */
-    for (i = 0;  i < 3;  i++)
-        s->band[band].sg[i] = s->band[band].p[i] >> 15;
-    wd1 = saturate(s->band[band].a[1] << 2);
-
-    wd2 = (s->band[band].sg[0] == s->band[band].sg[1])  ?  -wd1  :  wd1;
-    if (wd2 > 32767)
-        wd2 = 32767;
-    wd3 = (s->band[band].sg[0] == s->band[band].sg[2])  ?  128  :  -128;
-    wd3 += (wd2 >> 7);
-    wd3 += (s->band[band].a[2]*32512) >> 15;
-    if (wd3 > 12288)
-        wd3 = 12288;
-    else if (wd3 < -12288)
-        wd3 = -12288;
-    s->band[band].ap[2] = wd3;
-
-    /* Block 4, UPPOL1 */
-    s->band[band].sg[0] = s->band[band].p[0] >> 15;
-    s->band[band].sg[1] = s->band[band].p[1] >> 15;
-    wd1 = (s->band[band].sg[0] == s->band[band].sg[1])  ?  192  :  -192;
-    wd2 = (s->band[band].a[1]*32640) >> 15;
-
-    s->band[band].ap[1] = saturate(wd1 + wd2);
-    wd3 = saturate(15360 - s->band[band].ap[2]);
-    if (s->band[band].ap[1] > wd3)
-        s->band[band].ap[1] = wd3;
-    else if (s->band[band].ap[1] < -wd3)
-        s->band[band].ap[1] = -wd3;
-
-    /* Block 4, UPZERO */
-    wd1 = (d == 0)  ?  0  :  128;
-    s->band[band].sg[0] = d >> 15;
-    for (i = 1;  i < 7;  i++)
-    {
-        s->band[band].sg[i] = s->band[band].d[i] >> 15;
-        wd2 = (s->band[band].sg[i] == s->band[band].sg[0])  ?  wd1  :  -wd1;
-        wd3 = (s->band[band].b[i]*32640) >> 15;
-        s->band[band].bp[i] = saturate(wd2 + wd3);
-    }
-
-    /* Block 4, DELAYA */
-    for (i = 6;  i > 0;  i--)
-    {
-        s->band[band].d[i] = s->band[band].d[i - 1];
-        s->band[band].b[i] = s->band[band].bp[i];
-    }
-    
-    for (i = 2;  i > 0;  i--)
-    {
-        s->band[band].r[i] = s->band[band].r[i - 1];
-        s->band[band].p[i] = s->band[band].p[i - 1];
-        s->band[band].a[i] = s->band[band].ap[i];
-    }
-
-    /* Block 4, FILTEP */
-    wd1 = saturate(s->band[band].r[1] + s->band[band].r[1]);
-    wd1 = (s->band[band].a[1]*wd1) >> 15;
-    wd2 = saturate(s->band[band].r[2] + s->band[band].r[2]);
-    wd2 = (s->band[band].a[2]*wd2) >> 15;
-    s->band[band].sp = saturate(wd1 + wd2);
-
-    /* Block 4, FILTEZ */
-    s->band[band].sz = 0;
-    for (i = 6;  i > 0;  i--)
-    {
-        wd1 = saturate(s->band[band].d[i] + s->band[band].d[i]);
-        s->band[band].sz += (s->band[band].b[i]*wd1) >> 15;
-    }
-    s->band[band].sz = saturate(s->band[band].sz);
-
-    /* Block 4, PREDIC */
-    s->band[band].s = saturate(s->band[band].sp + s->band[band].sz);
-}
-/*- End of function --------------------------------------------------------*/
+#include "g722_common.h"
+#include "g722.h"
+#include "g722_decoder.h"
 
 G722_DEC_CTX *g722_decoder_new(int rate, int options)
 {
@@ -325,7 +212,7 @@ int g722_decode(G722_DEC_CTX *s, const uint8_t g722_data[], int len, int16_t amp
         wd3 = (wd2 < 0)  ?  (ilb[wd1] << -wd2)  :  (ilb[wd1] >> wd2);
         s->band[0].det = wd3 << 2;
 
-        block4(s, 0, dlowt);
+        block4(&s->band[0], dlowt);
         
         if (!s->eight_k)
         {
@@ -356,7 +243,7 @@ int g722_decode(G722_DEC_CTX *s, const uint8_t g722_data[], int len, int16_t amp
             wd3 = (wd2 < 0)  ?  (ilb[wd1] << -wd2)  :  (ilb[wd1] >> wd2);
             s->band[1].det = wd3 << 2;
 
-            block4(s, 1, dhigh);
+            block4(&s->band[1], dhigh);
         }
 
         if (s->itu_test_mode)

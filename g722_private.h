@@ -15,8 +15,6 @@
  *****    Copyright (c) CMU    1993      *****
  * Computer Science, Speech Group
  * Chengxiang Lu and Alex Hauptmann
- *
- * $Id: g722_private.h,v 1.1 2012/08/07 11:33:45 sobomax Exp $
  */
 
 
@@ -42,6 +40,23 @@ typedef struct g722_encode_state G722_ENC_CTX;
 typedef struct g722_decode_state G722_DEC_CTX;
 #define _G722_DEC_CTX_DEFINED
 
+struct g722_band
+{
+    int s;
+    int sp;
+    int sz;
+    int r[3];
+    int a[3];
+    int ap[3];
+    int p[3];
+    int d[7];
+    int b[7];
+    int bp[7];
+    int sg[7];
+    int nb;
+    int det;
+};
+
 struct g722_encode_state
 {
     /*! TRUE if the operating in the special ITU test mode, with the band split filters
@@ -57,22 +72,7 @@ struct g722_encode_state
     /*! Signal history for the QMF */
     int x[24];
 
-    struct
-    {
-        int s;
-        int sp;
-        int sz;
-        int r[3];
-        int a[3];
-        int ap[3];
-        int p[3];
-        int d[7];
-        int b[7];
-        int bp[7];
-        int sg[7];
-        int nb;
-        int det;
-    } band[2];
+    struct g722_band band[2];
 
     unsigned int in_buffer;
     int in_bits;
@@ -95,22 +95,7 @@ struct g722_decode_state
     /*! Signal history for the QMF */
     int x[24];
 
-    struct
-    {
-        int s;
-        int sp;
-        int sz;
-        int r[3];
-        int a[3];
-        int ap[3];
-        int p[3];
-        int d[7];
-        int b[7];
-        int bp[7];
-        int sg[7];
-        int nb;
-        int det;
-    } band[2];
+    struct g722_band band[2];
     
     unsigned int in_buffer;
     int in_bits;
