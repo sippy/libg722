@@ -23,6 +23,12 @@ to be fairly fast and efficient, while retaining high fidelity.
 Steve Underwood <steveu@coppice.org> improved the code a lot later on and
 contributed it into several popular open source projects.
 
+Himanshu Soni <sonihimanshu@gmail.com> has adjusted some coefficients
+to avoid over/under-flows in the decoder.
+
+Phil Schatzmann <phil.schatzmann@gmail.com> has added cmake-glue and Arduino
+support.
+
 Librarized by Sippy Software, Inc.
 
 ## Using libg722 as an Arduino Library
