@@ -31,16 +31,13 @@ support.
 
 Librarized by Sippy Software, Inc.
 
-## Using libg722 as an Arduino Library
-
-You can download the library as zip and call include Library -> zip library. Or you can __git clone__ this project into the Arduino libraries folder e.g. with
+## Build and Install library:
 
 ```
-cd  ~/Documents/Arduino/libraries
 git clone https://github.com/sippy/libg722.git
+cmake -B libg722/build -S libg722
+make -C ibg722/build clean all test install
 ```
-
-The use of git is recommended because you can easily update to the latest version just by executing the git pull command in the project folder.
 
 ## License
 
