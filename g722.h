@@ -45,6 +45,7 @@ codec is considerably faster, and still fully compatible with wideband terminals
 
 enum
 {
+    G722_DEFAULT = 0x0000,
     G722_SAMPLE_RATE_8000 = 0x0001,
     G722_PACKED = 0x0002
 };
