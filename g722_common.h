@@ -34,9 +34,7 @@
 #define TRUE (!FALSE)
 #endif
 
-static int16_t saturate(int32_t) __attribute__((always_inline));
-
-static int16_t saturate(int32_t amp)
+static inline int16_t saturate(int32_t amp)
 {
     int16_t amp16;
 
@@ -50,9 +48,7 @@ static int16_t saturate(int32_t amp)
 }
 /*- End of function --------------------------------------------------------*/
 
-static void block4(struct g722_band *, int) __attribute__((always_inline));
-
-static void block4(struct g722_band *band, int d)
+static inline void block4(struct g722_band *band, int d)
 {
     int wd1;
     int wd2;
