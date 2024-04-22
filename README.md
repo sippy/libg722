@@ -39,6 +39,19 @@ cmake -B libg722/build -S libg722
 make -C ibg722/build clean all test install
 ```
 
+## Install Python module from PyPy:
+
+```
+pip install G722
+```
+
+## Build and Install Python module from source code:
+
+```
+git clone https://github.com/sippy/libg722.git
+pip install libg722/
+```
+
 ## License
 
 This code is mostly Public Domain. Library test code is under BSD 2-clause
