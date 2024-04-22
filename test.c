@@ -59,7 +59,7 @@ main(int argc, char **argv)
     G722_DEC_CTX *g722_dctx;
     G722_ENC_CTX *g722_ectx;
     int i, srate, ch, enc, bend;
-    size_t oblen;
+    int oblen;
 
     /* options descriptor */
     static struct option longopts[] = {
@@ -70,13 +70,13 @@ main(int argc, char **argv)
    };
 
    srate = G722_SAMPLE_RATE_8000;
-   oblen = sizeof(obuf) / 2;
+   oblen = 1;
    enc = bend = 0;
    while ((ch = getopt_long(argc, argv, "", longopts, NULL)) != -1) {
        switch (ch) {
        case 256:
            srate &= ~G722_SAMPLE_RATE_8000;
-           oblen *= 2;
+           oblen = 2;
            break;
        case 257:
            enc = 1;
@@ -106,23 +106,23 @@ main(int argc, char **argv)
         exit (1);
     }
 
+    int ib;
     if (enc == 0) {
         g722_dctx = g722_decoder_new(64000, srate);
         if (g722_dctx == NULL) {
             fprintf(stderr, "g722_decoder_new() failed\n");
             exit (1);
         }
-
-        while (fread(ibuf, sizeof(ibuf), 1, fi) == 1) {
-            g722_decode(g722_dctx, ibuf, sizeof(ibuf), obuf);
-            for (i = 0; i < (oblen / sizeof(obuf[0])); i++) {
+        while ((ib=fread(ibuf, 1, sizeof(ibuf), fi)) >= 1) {
+            g722_decode(g722_dctx, ibuf, ib, obuf);
+            for (i = 0; i < (ib * oblen); i++) {
                 if (bend == 0) {
                     obuf[i] = htole16(obuf[i]);
                 } else {
                     obuf[i] = htobe16(obuf[i]);
                 }
             }
-            fwrite(obuf, oblen, 1, fo);
+            fwrite(obuf, ib * oblen * sizeof(obuf[0]), 1, fo);
             fflush(fo);
         }
     } else {
@@ -131,16 +131,18 @@ main(int argc, char **argv)
             fprintf(stderr, "g722_encoder_new() failed\n");
             exit (1);
         }
-        while (fread(obuf, oblen, 1, fi) == 1) {
-            for (i = 0; i < (oblen / sizeof(obuf[0])); i++) {
+        int insize = sizeof(obuf) / ((oblen == 1) ? 2 : 1);
+        while ((ib=fread(obuf, 1, insize, fi)) >= 1) {
+            int ibnelem = ib / sizeof(obuf[0]);
+            for (i = 0; i < ibnelem; i++) {
                 if (bend == 0) {
                     obuf[i] = le16toh(obuf[i]);
                 } else {
                     obuf[i] = be16toh(obuf[i]);
                 }
             }
-            g722_encode(g722_ectx, obuf, (oblen / sizeof(obuf[0])), ibuf);
-            fwrite(ibuf, sizeof(ibuf), 1, fo);
+            g722_encode(g722_ectx, obuf, ibnelem, ibuf);
+            fwrite(ibuf, ibnelem / oblen, 1, fo);
             fflush(fo);
         }
     }
