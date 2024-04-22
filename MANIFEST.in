@@ -1,0 +1,2 @@
+include g722.h g722_codec.h g722_common.h g722_decoder.h g722_encoder.h g722_private.h
+include python/requirements.txt python/symbols.map

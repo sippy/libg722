@@ -1,0 +1,6 @@
+{
+    global:
+        PyInit_G722*;
+    local:
+        *;
+};
