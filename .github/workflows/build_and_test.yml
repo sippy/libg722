@@ -97,7 +97,7 @@ jobs:
 
   publish_wheels:
     needs: build_and_test_python
-    if: github.event_name == 'release' && github.event.action == 'published'
+    if: github.event_name == 'release' && github.event.action == 'created'
     runs-on: ubuntu-latest
     environment:
       name: pypi
