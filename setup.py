@@ -47,8 +47,8 @@ kwargs = {
       'python_requires': '>=3.10',
       'install_requires': requirements,
       'classifiers': [
-            'License :: OSI Approved :: BSD License',
-            'Operating System :: POSIX',
+            'License :: Public Domain',
+            'Operating System :: OS Independent',
             'Programming Language :: C',
             'Programming Language :: Python'
       ]
