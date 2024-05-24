@@ -39,7 +39,7 @@ with open(src_dir + "README.md", "r") as fh:
 
 kwargs = {
       'name':mod_name,
-      'version':'1.1.0',
+      'version':'1.1.1',
       'description':'This is a package for G.722 module',
       'long_description': long_description,
       'long_description_content_type': "text/markdown",
