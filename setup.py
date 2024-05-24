@@ -3,6 +3,7 @@ from distutils.core import setup, Extension
 from setuptools.command.test import test as TestCommand
 from os.path import exists, realpath, dirname, join as path_join
 from sys import argv as sys_argv
+from sysconfig import get_platform
 import numpy as np
 
 mod_name = 'G722'
@@ -15,7 +16,9 @@ mod_dir = '' if exists(mod_fname) else 'python/'
 
 compile_args = [f'-I{src_dir}', '-flto', f'-I{np.get_include()}']
 smap_fname = f'{mod_dir}symbols.map'
-link_args = ['-flto', f'-Wl,--version-script={smap_fname}']
+link_args = ['-flto',]
+if not get_platform().startswith('macosx-'):
+    link_args.append(f'-Wl,--version-script={smap_fname}')
 debug_cflags = ['-g3', '-O0', '-DDEBUG_MOD']
 debug_link_args = ['-g3', '-O0']
 mod_common_args = {
