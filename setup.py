@@ -4,7 +4,6 @@ from setuptools.command.test import test as TestCommand
 from os.path import exists, realpath, dirname, join as path_join
 from sys import argv as sys_argv
 from sysconfig import get_platform
-import numpy as np
 
 mod_name = 'G722'
 mod_name_dbg = mod_name + '_debug'
@@ -14,7 +13,11 @@ src_dir = './' if exists('g722_decode.c') else '../'
 mod_fname = mod_name + '_mod.c'
 mod_dir = '' if exists(mod_fname) else 'python/'
 
-compile_args = [f'-I{src_dir}', '-flto', f'-I{np.get_include()}']
+def np_get_include():
+    import numpy as np
+    return np.get_include()
+
+compile_args = [f'-I{src_dir}', '-flto', f'-I{np_get_include()}']
 smap_fname = f'{mod_dir}symbols.map'
 link_args = ['-flto',]
 if not get_platform().startswith('macosx-'):
