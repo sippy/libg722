@@ -19,10 +19,15 @@ def main():
         import numpy as np
         return f'-I{np.get_include()}'
 
-    compile_args = [f'-I{src_dir}', '-flto', np_include()]
-    smap_fname = f'{mod_dir}symbols.map'
-    link_args = ['-flto',]
-    if not get_platform().startswith('macosx-'):
+    is_win = get_platform().startswith('win')
+    is_mac = get_platform().startswith('macosx-')
+
+    compile_args = [f'-I{src_dir}', np_include()]
+    if not is_win:
+        compile_args.append('-flto')
+    link_args = ['-flto',] if not is_win else []
+    if not is_mac and not is_win:
+        smap_fname = f'{mod_dir}symbols.map'
         link_args.append(f'-Wl,--version-script={smap_fname}')
     debug_cflags = ['-g3', '-O0', '-DDEBUG_MOD']
     debug_link_args = ['-g3', '-O0']
