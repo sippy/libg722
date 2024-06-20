@@ -13,5 +13,5 @@ ${TEST_CMD} --enc --sln16k --bend ${TDDIR}/pcminb.dat pcminb.g722.out
 ${TEST_CMD} --sln16k --bend pcminb.g722.out pcminb.raw.16k.out
 ${TEST_CMD} --enc test.raw.out test.g722.out
 ${TEST_CMD} --sln16k ${TDDIR}/fullscale.g722 fullscale.raw.out
-sha256sum test.raw.out test.raw.16k.out pcminb.g722.out pcminb.raw.16k.out \
+openssl sha256 -r test.raw.out test.raw.16k.out pcminb.g722.out pcminb.raw.16k.out \
   test.g722.out fullscale.raw.out | diff ${TDDIR}/test.checksum -
