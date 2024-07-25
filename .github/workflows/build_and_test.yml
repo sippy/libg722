@@ -23,7 +23,6 @@ permissions:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
   build_and_test:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
@@ -111,7 +110,7 @@ jobs:
         shell: bash
 
   publish_wheels:
-    needs: build_and_test_python
+    needs: [build_and_test_python, build_in_docker]
     if: github.event_name == 'release' && github.event.action == 'created'
     runs-on: ubuntu-latest
     environment:
@@ -138,3 +137,31 @@ jobs:
 
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+
+  build_in_docker:
+    needs: build_and_test
+    runs-on: ubuntu-latest
+    env:
+      PLATFORMS: linux/amd64,linux/i386,linux/arm/v7,linux/arm64,linux/riscv64
+      BASE_IMAGE: debian:sid-slim
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        id: qemu
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64,arm,riscv64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./docker/Dockerfile.build
+          build-args: |
+            BASE_IMAGE=${{ env.BASE_IMAGE }}
+          platforms: ${{ env.PLATFORMS }}
