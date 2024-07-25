@@ -1,14 +1,14 @@
 cmake_minimum_required(VERSION 3.16)
 
 # set the project name
-project(libg722)
+project(libg722 C)
 
 option(ENABLE_SHARED_LIB "Build shared library" ON)
 option(ENABLE_STATIC_LIB "Build static library" ON)
 
 # lots of warnings and all warnings as errors
 ## add_compile_options(-Wall -Wextra )
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_C_STANDARD 17)
 
 file(GLOB_RECURSE SRC_LIST_C CONFIGURE_DEPENDS  "${PROJECT_SOURCE_DIR}/g722*.c" )
 
