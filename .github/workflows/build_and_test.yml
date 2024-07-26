@@ -142,7 +142,6 @@ jobs:
     needs: build_and_test
     runs-on: ubuntu-latest
     env:
-      PLATFORMS: linux/amd64,linux/i386,linux/arm/v7,linux/arm64,linux/riscv64
       BASE_IMAGE: debian:sid-slim
     steps:
       - name: Checkout repository
@@ -152,10 +151,15 @@ jobs:
         id: qemu
         uses: docker/setup-qemu-action@v3
         with:
-          platforms: arm64,arm,riscv64
+          platforms: arm64,arm,riscv64,mips64le,ppc64le,s390x
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: Set environments
+        run: |
+          PLATFORMS="`docker manifest inspect ${{ env.BASE_IMAGE }} | jq -r '.manifests[] | "\(.platform.os)/\(.platform.architecture)"' | sort -u | paste -sd ','`"
+          echo "PLATFORMS=${PLATFORMS}" >> $GITHUB_ENV
 
       - name: Build Docker image
         uses: docker/build-push-action@v6
