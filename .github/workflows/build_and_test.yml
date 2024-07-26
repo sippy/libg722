@@ -25,7 +25,7 @@ permissions:
 jobs:
   build_and_test:
     # The type of runner that the job will run on
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64]
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -140,7 +140,7 @@ jobs:
 
   build_in_docker:
     needs: build_and_test
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64]
     strategy:
       matrix:
         base_image: ['debian:sid-slim', 'debian:12-slim']
