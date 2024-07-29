@@ -143,8 +143,8 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
 
   build_in_docker:
-    needs: build_and_test
-    runs-on: [self-hosted, linux, x64]
+    needs: [build_and_test, build_and_test_python]
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         base_image: ['debian:sid-slim', 'debian:12-slim']
