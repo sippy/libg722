@@ -141,8 +141,11 @@ jobs:
   build_in_docker:
     needs: build_and_test
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        base_image: ['debian:sid-slim', 'debian:12-slim']
     env:
-      BASE_IMAGE: debian:sid-slim
+      BASE_IMAGE: ${{ matrix.base_image }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
