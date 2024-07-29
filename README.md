@@ -52,6 +52,16 @@ git clone https://github.com/sippy/libg722.git
 pip install libg722/
 ```
 
+## Pull library into your Docker container:
+```
+ARG BASE_IMAGE=debian:sid-slim
+ARG LIBG722_IMAGE=sippylabs/libg722:latest-debian_sid-slim
+FROM ${LIBG722_IMAGE} AS libg722
+FROM ${BASE_IMAGE} AS build
+COPY --from=libg722 /usr/local/lib/libg722.* /usr/local/lib/
+COPY --from=libg722 /usr/local/include/g722* /usr/local/include/
+```
+
 ## License
 
 This code is mostly Public Domain. Library test code is under BSD 2-clause
