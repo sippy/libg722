@@ -217,7 +217,7 @@ PyG722_decode(PyG722* self, PyObject* args) {
     owner->data = array;
 
     // Create a new numpy array to hold the integers
-    long dims[1] = {olength};
+    npy_intp dims[1] = {olength};
     PyObject* numpy_array = PyArray_SimpleNewFromData(1, dims, NPY_INT16, (void *)array);
     if (numpy_array == NULL) goto e1;
     PyArray_SetBaseObject((PyArrayObject*)numpy_array, (PyObject*)owner);
