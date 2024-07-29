@@ -104,9 +104,13 @@ jobs:
         run: pip install dist/[Gg]722*.gz
         shell: bash
 
-      - if: ${{ matrix.os != 'windows' }}
-        name: test
+      - name: test
+        if: ${{ matrix.os != 'windows' }}
         run: ./scripts/do-test.sh "python test.py"
+        shell: bash
+
+      - name: unit tests
+        run: python -m unittest discover tests '*.py'
         shell: bash
 
   publish_wheels:
