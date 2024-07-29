@@ -176,6 +176,19 @@ jobs:
           OS_TAG="`echo ${BASE_IMAGE} | sed 's|:|_|g'`"
           echo "OS_TAG=${OS_TAG}" >> $GITHUB_ENV
 
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_REPO }}
+          tags: |
+            type=schedule,suffix=-${{ env.OS_TAG}}
+            type=ref,event=branch,suffix=-${{ env.OS_TAG }}
+            type=ref,event=tag,suffix=-${{ env.OS_TAG }}
+            type=ref,event=pr,suffix=-${{ env.OS_TAG }}
+            type=raw,value=latest-${{ env.OS_TAG }},enable={{is_default_branch}}
+            type=sha,suffix=-${{ env.OS_TAG }}
+
       - name: Build Docker image
         uses: docker/build-push-action@v6
         env:
@@ -186,7 +199,8 @@ jobs:
           build-args: |
             BASE_IMAGE=${{ env.BASE_IMAGE }}
           platforms: ${{ env.PLATFORMS }}
-          tags: ${{ env.DOCKER_REPO }}:${{ env.GIT_BRANCH }}-${{ env.OS_TAG}}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           push: true
           cache-from: ${{ env.CACHE_SPEC }}
           cache-to: ${{ env.CACHE_SPEC }},mode=max
