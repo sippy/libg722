@@ -1,6 +1,5 @@
 from sys import exit, argv
 from distutils.core import setup, Extension
-from setuptools.command.test import test as TestCommand
 from os.path import exists, realpath, dirname, join as path_join
 from sys import argv as sys_argv
 from sysconfig import get_platform
