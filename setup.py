@@ -48,7 +48,7 @@ def main():
 
     kwargs = {
         'name':mod_name,
-        'version':'1.1.1',
+        'version':'1.2.0',
         'description':'This is a package for G.722 module',
         'long_description': long_description,
         'long_description_content_type': "text/markdown",
