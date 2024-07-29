@@ -172,6 +172,7 @@ jobs:
           PLATFORMS="`docker manifest inspect ${{ env.BASE_IMAGE }} | jq -r '.manifests[] | "\(.platform.os)/\(.platform.architecture)"' | sort -u | paste -sd ','`"
           echo "PLATFORMS=${PLATFORMS}" >> $GITHUB_ENV
           GIT_BRANCH="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
+          GIT_BRANCH="${GIT_BRANCH#refs/tags/}"
           echo "GIT_BRANCH=${GIT_BRANCH}" >> $GITHUB_ENV
           OS_TAG="`echo ${BASE_IMAGE} | sed 's|:|_|g'`"
           echo "OS_TAG=${OS_TAG}" >> $GITHUB_ENV
