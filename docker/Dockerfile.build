@@ -11,4 +11,5 @@ WORKDIR /src
 RUN --mount=type=bind,target=.,rw cmake -B build && make -C build all test install
 FROM ${BASE_IMAGE} AS clean
 COPY --from=build /usr/local/lib/libg722.* /usr/local/lib/
-COPY --from=build /usr/local/include/g722* /usr/local/include/
+COPY --from=build --exclude=g722_common.h --exclude=g722_private.h \
+ /usr/local/include/g722* /usr/local/include/
