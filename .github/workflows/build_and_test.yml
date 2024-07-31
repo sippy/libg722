@@ -147,7 +147,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        base_image: ['debian:sid-slim', 'debian:12-slim']
+        base_image: ['debian:sid-slim', 'debian:12-slim', 'ubuntu:latest']
     env:
       DOCKER_REPO: sippylabs/libg722
       BASE_IMAGE: ${{ matrix.base_image }}
