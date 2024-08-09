@@ -159,8 +159,6 @@ jobs:
       - name: Set up QEMU
         id: qemu
         uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64,arm,riscv64,mips64le,ppc64le,s390x
 
       - name: Log in to Docker Hub
         if: ${{ env.DOCKER_RW }}
@@ -174,7 +172,16 @@ jobs:
 
       - name: Set environments
         run: |
-          PLATFORMS="`docker manifest inspect ${{ env.BASE_IMAGE }} | jq -r '.manifests[] | "\(.platform.os)/\(.platform.architecture)"' | sort -u | paste -sd ','`"
+          # mips64 seems to be broken at the moment...
+          if [ "${{ env.BASE_IMAGE }}" = "debian:sid-slim" ]
+          then
+            FILT="grep -v mips64le"
+          else
+            FILT="cat"
+          fi
+          PLATFORMS="`docker manifest inspect ${{ env.BASE_IMAGE }} | \
+           jq -r '.manifests[] | "\(.platform.os)/\(.platform.architecture)"' | \
+           sort -u | ${FILT} | paste -sd ','`"
           echo "PLATFORMS=${PLATFORMS}" >> $GITHUB_ENV
           GIT_BRANCH="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
           GIT_BRANCH="${GIT_BRANCH#refs/tags/}"

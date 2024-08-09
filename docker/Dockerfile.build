@@ -4,11 +4,12 @@ ARG BASE_IMAGE="debian:sid-slim"
 FROM ${BASE_IMAGE} AS build
 LABEL maintainer="Maksym Sobolyev <sobomax@sippysoft.com>"
 
-ARG BUILD_PKGS="cmake make gcc libc6-dev openssl"
+ARG BUILD_PKGS="cmake make clang libc6-dev openssl"
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends ${BUILD_PKGS}
 WORKDIR /src
-RUN --mount=type=bind,target=.,rw cmake -B build && make -C build all test install
+RUN --mount=type=bind,target=.,rw cmake -B build && \
+ make -C build CTEST_OUTPUT_ON_FAILURE=1 all test install
 FROM ${BASE_IMAGE} AS clean
 COPY --from=build /usr/local/lib/libg722.* /usr/local/lib/
 COPY --from=build --exclude=g722_common.h --exclude=g722_private.h \
