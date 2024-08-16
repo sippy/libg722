@@ -180,7 +180,7 @@ jobs:
             FILT="cat"
           fi
           PLATFORMS="`docker manifest inspect ${{ env.BASE_IMAGE }} | \
-           jq -r '.manifests[] | "\(.platform.os)/\(.platform.architecture)"' | \
+           jq -r '.manifests[] | "\(.platform.os)/\(.platform.architecture)\(if .platform.variant != null then "/\(.platform.variant)" else "" end)"' | \
            sort -u | ${FILT} | paste -sd ','`"
           echo "PLATFORMS=${PLATFORMS}" >> $GITHUB_ENV
           GIT_BRANCH="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
