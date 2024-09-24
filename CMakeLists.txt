@@ -8,7 +8,7 @@ option(ENABLE_STATIC_LIB "Build static library" ON)
 
 # lots of warnings and all warnings as errors
 ## add_compile_options(-Wall -Wextra )
-set(CMAKE_C_STANDARD 17)
+set(CMAKE_C_STANDARD 11)
 
 file(GLOB_RECURSE SRC_LIST_C CONFIGURE_DEPENDS  "${PROJECT_SOURCE_DIR}/g722*.c" )
 
