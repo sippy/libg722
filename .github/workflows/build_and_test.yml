@@ -25,7 +25,7 @@ permissions:
 jobs:
   build_and_test:
     # The type of runner that the job will run on
-    runs-on: [self-hosted, linux, x64]
+    runs-on: ubuntu-latest
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -181,7 +181,7 @@ jobs:
           fi
           PLATFORMS="`docker manifest inspect ${{ env.BASE_IMAGE }} | \
            jq -r '.manifests[] | "\(.platform.os)/\(.platform.architecture)\(if .platform.variant != null then "/\(.platform.variant)" else "" end)"' | \
-           sort -u | ${FILT} | paste -sd ','`"
+           sort -u | grep -v unknown | ${FILT} | paste -sd ','`"
           echo "PLATFORMS=${PLATFORMS}" >> $GITHUB_ENV
           GIT_BRANCH="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
           GIT_BRANCH="${GIT_BRANCH#refs/tags/}"
