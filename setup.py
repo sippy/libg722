@@ -62,11 +62,10 @@ def main():
         'author_email':'sobomax@sippysoft.com',
         'url':'https://github.com/sippy/libg722',
         'ext_modules': [module1, module2],
-        'python_requires': '>=3.10',
         'install_requires': requirements,
         'cmdclass': {'checkversion': CheckVersion},
+        'license': 'Public-Domain',
         'classifiers': [
-                'License :: Public Domain',
                 'Operating System :: OS Independent',
                 'Programming Language :: C',
                 'Programming Language :: Python'
