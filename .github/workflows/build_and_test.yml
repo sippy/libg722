@@ -9,7 +9,7 @@ on:
   pull_request:
 
   release:
-    types: [created]
+    types: [published]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -113,17 +113,32 @@ jobs:
         run: python -m unittest discover tests '*.py'
         shell: bash
 
-  publish_wheels:
+  build_wheels:
+    permissions:
+      packages: write
     needs: [build_and_test_python, build_in_docker]
-    if: github.event_name == 'release' && github.event.action == 'created'
+    uses: sippy/cimagic/.github/workflows/BuildPythonWheels.yml@v1
+
+  publish_all_wheels:
+    needs: [build_wheels]
+    if: github.event_name == 'release' && github.event.action == 'published'
     runs-on: ubuntu-latest
     environment:
       name: pypi
       url: https://pypi.org/p/G722
     permissions:
+      actions: read
+      contents: read
       id-token: write
     steps:
       - uses: actions/checkout@v4
+
+      - name: Download all wheel artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: 'dist-*'
+          merge-multiple: true
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -138,6 +153,13 @@ jobs:
 
       - name: build
         run: python setup.py build sdist
+
+      - name: Check release version number
+        if: github.event_name == 'release' && github.event.action == 'published'
+        run: |
+          GIT_BRANCH="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
+          GIT_BRANCH="${GIT_BRANCH#refs/tags/}"
+          python setup.py checkversion --tag="${GIT_BRANCH}"
 
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
