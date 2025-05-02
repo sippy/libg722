@@ -1,8 +1,14 @@
+#!/usr/bin/env python
+
 from sys import exit, argv
 from distutils.core import setup, Extension
 from os.path import exists, realpath, dirname, join as path_join
-from sys import argv as sys_argv
+from sys import argv as sys_argv, path as sys_path
+
 from sysconfig import get_platform
+
+sys_path.insert(0, realpath(dirname(__file__)))
+from build_tools.CheckVersion import CheckVersion
 
 def main():
 
@@ -58,6 +64,7 @@ def main():
         'ext_modules': [module1, module2],
         'python_requires': '>=3.10',
         'install_requires': requirements,
+        'cmdclass': {'checkversion': CheckVersion},
         'classifiers': [
                 'License :: Public Domain',
                 'Operating System :: OS Independent',
