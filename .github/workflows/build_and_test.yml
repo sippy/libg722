@@ -29,33 +29,33 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v4
+    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - uses: actions/checkout@v4
 
-      - name: Install Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y bmake cmake
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y bmake cmake
 
-      - name: Build with GNU Make
-        run: make clean all
+    - name: Build with GNU Make
+      run: make clean all
 
-      - name: Test with GNU Make
-        run: make test
+    - name: Test with GNU Make
+      run: make test
 
-      - name: Build with BSD Make
-        run: bmake clean all
+    - name: Build with BSD Make
+      run: bmake clean all
 
-      - name: Test with BSD Make
-        run: bmake test
+    - name: Test with BSD Make
+      run: bmake test
 
-      - name: Build with CMake
-        run: |
-          cmake -B build
-          make -C build clean all
+    - name: Build with CMake
+      run: |
+        cmake -B build
+        make -C build clean all
 
-      - name: Test with CMake
-        run: bmake -C build test
+    - name: Test with CMake
+      run: bmake -C build test
 
   build_and_test_python:
     needs: build_and_test
@@ -65,15 +65,15 @@ jobs:
         compiler: ['gcc', 'clang']
         os: [macos, ubuntu]
         include:
-          - python-version: '3.10'
-            compiler: microsoft
-            os: windows
-          - python-version: '3.11'
-            compiler: microsoft
-            os: windows
-          - python-version: '3.12'
-            compiler: microsoft
-            os: windows
+        - python-version: '3.10'
+          compiler: microsoft
+          os: windows
+        - python-version: '3.11'
+          compiler: microsoft
+          os: windows
+        - python-version: '3.12'
+          compiler: microsoft
+          os: windows
 
     runs-on: ${{ matrix.os }}-latest
     env:
@@ -81,37 +81,37 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v4
+    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - uses: actions/checkout@v4
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install --upgrade setuptools wheel
-          pip install -r python/requirements.txt
-        shell: bash
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install --upgrade setuptools wheel
+        pip install -r python/requirements.txt
+      shell: bash
 
-      - name: build
-        run: CC=${COMPILER} python setup.py build sdist
-        shell: bash
+    - name: build
+      run: CC=${COMPILER} python setup.py build sdist
+      shell: bash
 
-      - name: install
-        run: pip install dist/[Gg]722*.gz
-        shell: bash
+    - name: install
+      run: pip install dist/[Gg]722*.gz
+      shell: bash
 
-      - name: test
-        if: matrix.os != 'windows'
-        run: ./scripts/do-test.sh "python test.py"
-        shell: bash
+    - name: test
+      if: matrix.os != 'windows'
+      run: ./scripts/do-test.sh "python test.py"
+      shell: bash
 
-      - name: unit tests
-        run: python -m unittest discover tests '*.py'
-        shell: bash
+    - name: unit tests
+      run: python -m unittest discover tests '*.py'
+      shell: bash
 
   build_wheels:
     permissions:
@@ -131,38 +131,38 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-      - name: Download all wheel artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: dist
-          pattern: 'dist-*'
-          merge-multiple: true
+    - name: Download all wheel artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: dist
+        pattern: 'dist-*'
+        merge-multiple: true
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install setuptools wheel
-          pip install -r python/requirements.txt
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install setuptools wheel
+        pip install -r python/requirements.txt
 
-      - name: build
-        run: python setup.py build sdist
+    - name: build
+      run: python setup.py build sdist
 
-      - name: Check release version number
-        if: github.event_name == 'release' && github.event.action == 'published'
-        run: |
-          GIT_BRANCH="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
-          GIT_BRANCH="${GIT_BRANCH#refs/tags/}"
-          python setup.py checkversion --tag="${GIT_BRANCH}"
+    - name: Check release version number
+      if: github.event_name == 'release' && github.event.action == 'published'
+      run: |
+        GIT_BRANCH="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
+        GIT_BRANCH="${GIT_BRANCH#refs/tags/}"
+        python setup.py checkversion --tag="${GIT_BRANCH}"
 
-      - name: Publish package distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+    - name: Publish package distributions to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
 
   build_in_docker:
     needs: [build_and_test, build_and_test_python]
@@ -175,67 +175,67 @@ jobs:
       BASE_IMAGE: ${{ matrix.base_image }}
       DOCKER_RW: ${{ ( github.repository == 'sippy/libg722' && github.event_name != 'pull_request' ) && 'true' || 'false' }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-      - name: Set up QEMU
-        id: qemu
-        uses: docker/setup-qemu-action@v3
+    - name: Set up QEMU
+      id: qemu
+      uses: docker/setup-qemu-action@v3
 
-      - name: Log in to Docker Hub
-        if: env.DOCKER_RW == 'true'
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+    - name: Log in to Docker Hub
+      if: env.DOCKER_RW == 'true'
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
 
-      - name: Set environments
-        run: |
-          # mips64 seems to be broken at the moment...
-          if [ "${{ env.BASE_IMAGE }}" = "debian:sid-slim" ]
-          then
-            FILT="grep -v mips64le"
-          else
-            FILT="cat"
-          fi
-          PLATFORMS="`docker manifest inspect ${{ env.BASE_IMAGE }} | \
-           jq -r '.manifests[] | "\(.platform.os)/\(.platform.architecture)\(if .platform.variant != null then "/\(.platform.variant)" else "" end)"' | \
-           sort -u | grep -v unknown | ${FILT} | paste -sd ','`"
-          echo "PLATFORMS=${PLATFORMS}" >> $GITHUB_ENV
-          GIT_BRANCH="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
-          GIT_BRANCH="${GIT_BRANCH#refs/tags/}"
-          echo "GIT_BRANCH=${GIT_BRANCH}" >> $GITHUB_ENV
-          OS_TAG="`echo ${BASE_IMAGE} | sed 's|:|_|g'`"
-          echo "OS_TAG=${OS_TAG}" >> $GITHUB_ENV
+    - name: Set environments
+      run: |
+        # mips64 seems to be broken at the moment...
+        if [ "${{ env.BASE_IMAGE }}" = "debian:sid-slim" ]
+        then
+          FILT="grep -v mips64le"
+        else
+          FILT="cat"
+        fi
+        PLATFORMS="`docker manifest inspect ${{ env.BASE_IMAGE }} | \
+         jq -r '.manifests[] | "\(.platform.os)/\(.platform.architecture)\(if .platform.variant != null then "/\(.platform.variant)" else "" end)"' | \
+         sort -u | grep -v unknown | ${FILT} | paste -sd ','`"
+        echo "PLATFORMS=${PLATFORMS}" >> $GITHUB_ENV
+        GIT_BRANCH="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
+        GIT_BRANCH="${GIT_BRANCH#refs/tags/}"
+        echo "GIT_BRANCH=${GIT_BRANCH}" >> $GITHUB_ENV
+        OS_TAG="`echo ${BASE_IMAGE} | sed 's|:|_|g'`"
+        echo "OS_TAG=${OS_TAG}" >> $GITHUB_ENV
 
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.DOCKER_REPO }}
-          tags: |
-            type=schedule,suffix=-${{ env.OS_TAG}}
-            type=ref,event=branch,suffix=-${{ env.OS_TAG }}
-            type=ref,event=tag,suffix=-${{ env.OS_TAG }}
-            type=ref,event=pr,suffix=-${{ env.OS_TAG }}
-            type=raw,value=latest-${{ env.OS_TAG }},enable={{is_default_branch}}
-            type=sha,suffix=-${{ env.OS_TAG }}
+    - name: Extract metadata (tags, labels) for Docker
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.DOCKER_REPO }}
+        tags: |
+          type=schedule,suffix=-${{ env.OS_TAG}}
+          type=ref,event=branch,suffix=-${{ env.OS_TAG }}
+          type=ref,event=tag,suffix=-${{ env.OS_TAG }}
+          type=ref,event=pr,suffix=-${{ env.OS_TAG }}
+          type=raw,value=latest-${{ env.OS_TAG }},enable={{is_default_branch}}
+          type=sha,suffix=-${{ env.OS_TAG }}
 
-      - name: Build Docker image
-        uses: docker/build-push-action@v6
-        env:
-          CACHE_SPEC: "type=registry,ref=${{ env.DOCKER_REPO }}:${{ env.GIT_BRANCH }}-${{ env.OS_TAG}}-buildcache"
-        with:
-          context: .
-          file: ./docker/Dockerfile.build
-          build-args: |
-            BASE_IMAGE=${{ env.BASE_IMAGE }}
-          platforms: ${{ env.PLATFORMS }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          push: ${{ env.DOCKER_RW }}
-          cache-from: ${{ env.CACHE_SPEC }}
-          cache-to: ${{ env.CACHE_SPEC }},mode=max
+    - name: Build Docker image
+      uses: docker/build-push-action@v6
+      env:
+        CACHE_SPEC: "type=registry,ref=${{ env.DOCKER_REPO }}:${{ env.GIT_BRANCH }}-${{ env.OS_TAG}}-buildcache"
+      with:
+        context: .
+        file: ./docker/Dockerfile.build
+        build-args: |
+          BASE_IMAGE=${{ env.BASE_IMAGE }}
+        platforms: ${{ env.PLATFORMS }}
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        push: ${{ env.DOCKER_RW }}
+        cache-from: ${{ env.CACHE_SPEC }}
+        cache-to: ${{ env.CACHE_SPEC }},mode=max
