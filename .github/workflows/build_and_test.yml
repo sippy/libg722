@@ -121,7 +121,6 @@ jobs:
 
   publish_all_wheels:
     needs: [build_wheels]
-    if: github.event_name == 'release' && github.event.action == 'published'
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -154,6 +153,9 @@ jobs:
     - name: build
       run: python setup.py build sdist
 
+    - name: Show context tree
+      run: ls -lR dist
+
     - name: Check release version number
       if: github.event_name == 'release' && github.event.action == 'published'
       run: |
@@ -162,6 +164,7 @@ jobs:
         python setup.py checkversion --tag="${GIT_BRANCH}"
 
     - name: Publish package distributions to PyPI
+      if: github.event_name == 'release' && github.event.action == 'published'
       uses: pypa/gh-action-pypi-publish@release/v1
 
   build_in_docker:
