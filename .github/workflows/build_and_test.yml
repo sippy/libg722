@@ -242,3 +242,9 @@ jobs:
         push: ${{ env.DOCKER_RW }}
         cache-from: ${{ env.CACHE_SPEC }}
         cache-to: ${{ env.CACHE_SPEC }},mode=max
+
+  roll_release:
+    needs: publish_all_wheels
+    permissions:
+      contents: write
+    uses: sippy/cimagic/.github/workflows/RollReleaseDraft.yml@v1
