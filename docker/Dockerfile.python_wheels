@@ -18,7 +18,7 @@ ARG PYTHON_CMD
 RUN mkdir -p /root/.cache/pip
 RUN --mount=type=bind,from=pipcache,source=/,target=/tmp/pip_cache_root \
  test ! -d /tmp/pip_cache_root/root/.cache/pip || \
-  cp -a /tmp/pip_cache_root/root/.cache/pip /root/.cache/pip
+  cp -a /tmp/pip_cache_root/root/.cache/pip /root/.cache/
 
 RUN --mount=type=bind,source=scripts/build,target=scripts/build \
  sh -x scripts/build/install_depends_wheels.sh
