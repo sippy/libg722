@@ -4,7 +4,7 @@ ARG BASE_IMAGE="debian:sid-slim"
 FROM ${BASE_IMAGE} AS build
 LABEL maintainer="Maksym Sobolyev <sobomax@sippysoft.com>"
 
-ARG BUILD_PKGS="cmake make clang libc6-dev openssl"
+ARG BUILD_PKGS="cmake make clang libc6-dev openssl llvm"
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends ${BUILD_PKGS}
 WORKDIR /src
