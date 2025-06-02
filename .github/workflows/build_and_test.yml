@@ -117,11 +117,11 @@ jobs:
   build_wheels:
     permissions:
       packages: write
-    needs: [build_and_test_python, build_in_docker]
+    needs: [build_and_test_python]
     uses: sippy/cimagic/.github/workflows/BuildPythonWheels.yml@v1
 
   publish_all_wheels:
-    needs: [build_wheels]
+    needs: [build_wheels, build_in_docker]
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -169,7 +169,7 @@ jobs:
       uses: pypa/gh-action-pypi-publish@release/v1
 
   build_in_docker:
-    needs: [build_and_test, build_and_test_python]
+    needs: [build_and_test_python]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
