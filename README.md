@@ -33,10 +33,34 @@ Librarized by Sippy Software, Inc.
 
 ## Build and Install library:
 
+### MacOS & Linux
+
 ```
 git clone https://github.com/sippy/libg722.git
 cmake -B libg722/build -S libg722
-make -C ibg722/build clean all test install
+make -C libg722/build clean all test install
+```
+
+**Note for macOS users:** The library will be installed to `~/Library/libg722` by default. If you prefer a different location, you can specify it with:
+```
+cmake -B libg722/build -S libg722 -DCMAKE_INSTALL_PREFIX=/your/preferred/path
+```
+
+After installation, you may need to add the library path to your environment:
+```
+export DYLD_LIBRARY_PATH="$HOME/Library/libg722/lib:$DYLD_LIBRARY_PATH"
+```
+
+### iOS
+
+```
+git clone https://github.com/sippy/libg722.git
+cmake -B libg722/build-ios-device -S libg722 \
+  -DCMAKE_SYSTEM_NAME=iOS \
+  -DCMAKE_OSX_ARCHITECTURES=arm64 \
+  -DCMAKE_OSX_SYSROOT=iphoneos \
+  -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0
+make -C libg722/build-ios-device
 ```
 
 ## Install Python module from PyPy:

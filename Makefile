@@ -2,7 +2,12 @@
 
 LIB=	g722
 SHLIB_MAJOR=	0
-PREFIX?= /usr/local
+# Detect macOS and set appropriate default prefix
+ifeq ($(shell uname -s),Darwin)
+    PREFIX?= $(HOME)/Library/libg722
+else
+    PREFIX?= /usr/local
+endif
 LIBDIR= ${PREFIX}/lib
 MK_PROFILE=	no
 INCLUDEDIR= ${PREFIX}/include
