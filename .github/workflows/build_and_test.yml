@@ -25,17 +25,29 @@ permissions:
 jobs:
   build_test:
     name: 'Build&Test: C'
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos, ubuntu]
+
+    runs-on: ${{ matrix.os }}-latest
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v4
 
-    - name: Install Dependencies
+    - name: Install Dependencies (Ubuntu)
+      if: matrix.os == 'ubuntu'
       run: |
         sudo apt-get update
         sudo apt-get install -y bmake cmake
+
+    - name: Install Dependencies (macOS)
+      if: matrix.os == 'macos'
+      run: |
+        brew update
+        brew install bmake cmake
 
     - name: Build with GNU Make
       run: make clean all
@@ -56,6 +68,33 @@ jobs:
 
     - name: Test with CMake
       run: bmake -C build test
+
+    - name: Build iOS Framework (macos)
+      if: matrix.os == 'macos'
+      run: ONLY_BUILD=yes sh -x scripts/build/build_ios.sh
+
+    - name: Setup GitHub Actions artifact client
+      if: matrix.os == 'macos'
+      uses: lhotari/gh-actions-artifact-client@v2
+
+    - name: Upload Artifacts
+      if: matrix.os == 'macos'
+      run: |
+        set -euo pipefail
+        uploaded=0
+        for file in g722.xcframework.zip
+        do
+          uploaded=1
+          _name=$(basename "$file")
+          name="${_name%.*}"
+          echo "Uploading $name, file: $file"
+          zip - "$file" | gh-actions-artifact-client.js upload "$name" --retentionDays=7
+        done
+        if [ "$uploaded" -eq 0 ]
+        then
+          echo "No artifacts found for upload" >&2
+          exit 1
+        fi
 
   build_test_python:
     name: 'Build&Test: Python'
@@ -253,4 +292,7 @@ jobs:
     needs: publish_all_wheels
     permissions:
       contents: write
-    uses: sippy/cimagic/.github/workflows/RollReleaseDraft.yml@v1
+    uses: sippy/cimagic/.github/workflows/RollReleaseDraft.yml@wip
+    with:
+      release_files_artifacts: |
+        g722.xcframework

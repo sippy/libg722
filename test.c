@@ -27,6 +27,9 @@
 
 #if defined(__FreeBSD__)
 #include <sys/endian.h>
+#elif defined(__APPLE__)
+#include <machine/endian.h>
+#include <libkern/OSByteOrder.h>
 #else
 #include <endian.h>
 #endif
@@ -37,6 +40,14 @@
 
 #include "g722_encoder.h"
 #include "g722_decoder.h"
+
+/* Define byte order conversion functions for macOS */
+#if defined(__APPLE__)
+#define htole16(x) OSSwapHostToLittleInt16(x)
+#define htobe16(x) OSSwapHostToBigInt16(x)
+#define le16toh(x) OSSwapLittleToHostInt16(x)
+#define be16toh(x) OSSwapBigToHostInt16(x)
+#endif
 
 #define BUFFER_SIZE 10
 

@@ -1,7 +1,6 @@
 .SUFFIXES: .So
 VPATH = .
 
-PREFIX?= /usr/local
 LIBDIR= ${PREFIX}/lib
 INCLUDEDIR= ${PREFIX}/include
 
@@ -13,6 +12,15 @@ CFLAGS?= -O2 -pipe -Wno-attributes
 OBJS = $(SRCS_C:.c=.o)
 OBJS_PIC = $(SRCS_C:.c=.So)
 
+OS_NAME:=	$(shell uname -s)
+ifeq ($(OS_NAME),Darwin)
+    SONAME=	-install_name
+    PREFIX?=	$(HOME)/Library/libg722
+else
+    SONAME=	-soname
+    PREFIX?=	/usr/local
+endif
+
 all: libg722.a libg722.so.0 libg722.so
 
 libg722.a: $(OBJS) $(SRCS_H)
@@ -20,7 +28,7 @@ libg722.a: $(OBJS) $(SRCS_H)
 	ranlib $@
 
 libg722.so.0: $(OBJS_PIC) $(SRCS_H)
-	$(CC) -shared -o $@ -Wl,-soname,$@ $(OBJS_PIC)
+	$(CC) -shared -o $@ -Wl,${SONAME},$@ $(OBJS_PIC)
 
 libg722.so: libg722.so.0
 	ln -sf libg722.so.0 $@
