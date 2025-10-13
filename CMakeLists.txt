@@ -46,6 +46,9 @@ if( ENABLE_STATIC_LIB )
   install(TARGETS g722_static ARCHIVE DESTINATION lib PUBLIC_HEADER DESTINATION include)
   target_compile_options(g722_static PRIVATE -Wdouble-promotion -Wno-attributes)
   target_include_directories(g722_static PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+  if( CMAKE_C_COMPILER_ID STREQUAL "GNU" )
+    target_compile_options(g722_static PRIVATE -ffat-lto-objects)
+  endif()
 endif()
 
 # macOS-specific settings
