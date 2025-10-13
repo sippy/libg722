@@ -86,20 +86,10 @@ jobs:
       if: matrix.os == 'macos'
       run: |
         set -euo pipefail
-        uploaded=0
-        for file in g722.xcframework.zip
-        do
-          uploaded=1
-          _name=$(basename "$file")
-          name="${_name%.*}"
-          echo "Uploading $name, file: $file"
-          zip - "$file" | gh-actions-artifact-client.js upload "$name" --retentionDays=7
-        done
-        if [ "$uploaded" -eq 0 ]
-        then
-          echo "No artifacts found for upload" >&2
-          exit 1
-        fi
+        name="g722.xcframework"
+        file="${name}.zip"
+        echo "Uploading ${name}, file: ${file}"
+        zip - "${file}" | gh-actions-artifact-client.js upload "${name}" --retentionDays=7
 
   build_test_python:
     name: 'Build&Test: Python'
@@ -295,12 +285,20 @@ jobs:
         cache-from: ${{ env.CACHE_SPEC }}
         cache-to: ${{ env.CACHE_SPEC }},mode=max
 
+  build_packages:
+    name: Build Packages
+    needs: [build_test]
+    uses: sippy/cimagic/.github/workflows/BuildDPKGs.yml@v2
+    with:
+      apt_depends: pkg-config cmake ninja-build
+
   roll_release:
     name: Release
-    needs: publish_all_wheels
+    needs: [publish_all_wheels, build_packages]
     permissions:
       contents: write
     uses: sippy/cimagic/.github/workflows/RollReleaseDraft.yml@v2
     with:
       release_files_artifacts: |
         g722.xcframework
+        ${{ needs.build_packages.outputs.dpkgs_artifacts }}
