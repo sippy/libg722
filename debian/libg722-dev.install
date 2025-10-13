@@ -1,0 +1,3 @@
+usr/include/g722*.h
+usr/lib/*/libg722.a
+usr/lib/*/libg722.so

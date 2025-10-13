@@ -1,0 +1,37 @@
+#!/usr/bin/make -f
+
+include /usr/share/dpkg/default.mk
+
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
+%:
+	dh $@ --buildsystem=cmake
+
+override_dh_auto_configure:
+	dh_auto_configure -- \
+		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
+		-DCMAKE_INSTALL_LIBDIR=lib/$(DEB_HOST_MULTIARCH) \
+		-DENABLE_SHARED_LIB=ON \
+		-DENABLE_STATIC_LIB=ON
+
+override_dh_auto_test:
+	dh_auto_test -- ARGS=--output-on-failure
+
+override_dh_auto_install:
+	dh_auto_install
+	LIBDIR=$(CURDIR)/debian/tmp/usr/lib; \
+	MULTILIB=$(CURDIR)/debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH); \
+	if [ -d "$$LIBDIR" ]; then \
+		install -d "$$MULTILIB"; \
+		find "$$LIBDIR" -maxdepth 1 -name 'libg722.so*' -exec mv -t "$$MULTILIB" {} +; \
+		if [ -f "$$LIBDIR/libg722.a" ]; then \
+			mv "$$LIBDIR/libg722.a" "$$MULTILIB"/; \
+		fi; \
+		rmdir --ignore-fail-on-non-empty "$$LIBDIR" || true; \
+	fi
+	install -d $(CURDIR)/debian/tmp/usr/libexec/libg722
+	install -m0755 $(CURDIR)/obj-$(DEB_HOST_GNU_TYPE)/test_dynamic $(CURDIR)/debian/tmp/usr/libexec/libg722/
+	install -m0755 $(CURDIR)/obj-$(DEB_HOST_GNU_TYPE)/test_static $(CURDIR)/debian/tmp/usr/libexec/libg722/
+	install -d $(CURDIR)/debian/tmp/usr/libexec/libg722/scripts
+	install -m0755 scripts/do-test.sh $(CURDIR)/debian/tmp/usr/libexec/libg722/scripts/
+	cp -a test_data $(CURDIR)/debian/tmp/usr/libexec/libg722/

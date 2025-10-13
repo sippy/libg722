@@ -1,0 +1,34 @@
+Source: libg722
+Section: libs
+Priority: optional
+Maintainer: Maksym Sobolyev <sobomax@sippysoft.com>
+Standards-Version: 4.6.2
+Build-Depends: debhelper-compat (= 13),
+               cmake,
+               ninja-build,
+               pkg-config
+Rules-Requires-Root: no
+Homepage: https://github.com/sobomax/libg722
+
+Package: libg722
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: G.722 audio codec library
+ This package provides the shared library implementing the ITU-T G.722
+ wideband ADPCM audio codec.
+
+Package: libg722-dev
+Section: libdevel
+Architecture: any
+Depends: libg722 (= ${binary:Version}), ${misc:Depends}
+Description: Development files for libg722
+ This package contains the static library and header files for developing
+ applications that use the libg722 G.722 audio codec implementation.
+
+Package: libg722-test
+Section: misc
+Architecture: any
+Depends: libg722 (= ${binary:Version}), ${misc:Depends}
+Description: Test utilities and vectors for libg722
+ This package ships the upstream codec test binaries, scripts and
+ reference test data that exercise the libg722 implementation.
