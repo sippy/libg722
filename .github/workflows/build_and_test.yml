@@ -96,7 +96,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.10', '3.11', '3.12', '3.13']
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14-dev']
         compiler: ['gcc', 'clang']
         os: [macos, ubuntu]
         include:
@@ -110,6 +110,9 @@ jobs:
           compiler: microsoft
           os: windows
         - python-version: '3.13'
+          compiler: microsoft
+          os: windows
+        - python-version: '3.14-dev'
           compiler: microsoft
           os: windows
 
@@ -214,7 +217,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        base_image: ['debian:sid-slim', 'debian:12-slim', 'ubuntu:latest']
+        base_image: ['debian:sid-slim', 'debian:12-slim', 'debian:13-slim', 'ubuntu:latest']
     env:
       DOCKER_REPO: sippylabs/libg722
       BASE_IMAGE: ${{ matrix.base_image }}
