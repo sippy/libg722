@@ -130,11 +130,31 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Install dependencies
+    - name: Install build dependencies
       run: |
         python -m pip install --upgrade pip
         pip install --upgrade setuptools wheel
-        pip install -r python/requirements.txt
+      shell: bash
+
+    - name: build (no numpy)
+      run: LIBG722_NO_NUMPY=1 CC=${COMPILER} python setup.py sdist build
+      shell: bash
+
+    - name: install (no numpy)
+      run: LIBG722_NO_NUMPY=1 pip install --force-reinstall dist/[Gg]722*.gz
+      shell: bash
+
+    - name: test (no numpy)
+      if: matrix.os != 'windows'
+      run: ./scripts/do-test.sh "python test.py"
+      shell: bash
+
+    - name: unit tests (no numpy smoke)
+      run: python -m unittest discover tests 'test_decode.py'
+      shell: bash
+
+    - name: Install numpy dependencies
+      run: pip install -r python/requirements.txt
       shell: bash
 
     - name: build
@@ -142,7 +162,7 @@ jobs:
       shell: bash
 
     - name: install
-      run: pip install dist/[Gg]722*.gz
+      run: pip install --force-reinstall dist/[Gg]722*.gz
       shell: bash
 
     - name: test

@@ -76,6 +76,17 @@ git clone https://github.com/sippy/libg722.git
 pip install libg722/
 ```
 
+To build/install without NumPy support, set `LIBG722_NO_NUMPY=1`:
+
+```
+LIBG722_NO_NUMPY=1 pip install libg722/
+```
+
+`G722(sample_rate, bit_rate, use_numpy=None)` accepts an optional `use_numpy` flag:
+- `True`: return NumPy arrays from `decode()` (raises if built without NumPy support).
+- `False`: return Python `array('h')` from `decode()`.
+- omitted: use the build default (NumPy arrays when available, otherwise `array('h')`).
+
 ## Pull library into your Docker container:
 ```
 ARG BASE_IMAGE=debian:sid-slim

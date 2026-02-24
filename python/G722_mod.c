@@ -26,10 +26,13 @@
 
 #include <assert.h>
 #include <stdbool.h>
+#include <string.h>
 
 #include <Python.h>
+#if defined(WITH_NUMPY) && WITH_NUMPY
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include <numpy/arrayobject.h>
+#endif
 
 #include "g722_encoder.h"
 #include "g722_decoder.h"
@@ -51,19 +54,68 @@
 #define MODULE_NAME_STR TOSTRING(MODULE_NAME)
 #define PY_INIT_FUNC CONCATENATE(PyInit_, MODULE_NAME)
 
+static bool
+is_i16_buffer_format(const char *format)
+{
+    if (format == NULL) {
+        return false;
+    }
+    return strcmp(format, "h") == 0
+        || strcmp(format, "=h") == 0
+        || strcmp(format, "<h") == 0
+        || strcmp(format, ">h") == 0;
+}
+
 typedef struct {
     PyObject_HEAD
     G722_DEC_CTX *g722_dctx;
     G722_ENC_CTX *g722_ectx;
     int sample_rate;
     int bit_rate;
+    bool use_numpy;
 } PyG722;
+
+static PyObject *
+build_pcm16_array(int16_t *array, Py_ssize_t olength) {
+    PyObject* array_mod = PyImport_ImportModule("array");
+    if (!array_mod) {
+        free(array);
+        return NULL;
+    }
+    PyObject* array_ctor = PyObject_GetAttrString(array_mod, "array");
+    Py_DECREF(array_mod);
+    if (!array_ctor) {
+        free(array);
+        return NULL;
+    }
+    PyObject* result = PyObject_CallFunction(array_ctor, "s", "h");
+    Py_DECREF(array_ctor);
+    if (!result) {
+        free(array);
+        return NULL;
+    }
+    PyObject* pcm_bytes = PyBytes_FromStringAndSize((const char *)array, olength * sizeof(array[0]));
+    free(array);
+    if (!pcm_bytes) {
+        Py_DECREF(result);
+        return NULL;
+    }
+    PyObject* frombytes_ret = PyObject_CallMethod(result, "frombytes", "O", pcm_bytes);
+    Py_DECREF(pcm_bytes);
+    if (!frombytes_ret) {
+        Py_DECREF(result);
+        return NULL;
+    }
+    Py_DECREF(frombytes_ret);
+    return result;
+}
 
 static int PyG722_init(PyG722* self, PyObject* args, PyObject* kwds) {
     int sample_rate, bit_rate, options;
-    static char *kwlist[] = {"sample_rate", "bit_rate", NULL};
+    PyObject *use_numpy_obj = NULL;
+    static char *kwlist[] = {"sample_rate", "bit_rate", "use_numpy", NULL};
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "ii", kwlist, &sample_rate, &bit_rate)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "ii|O", kwlist, &sample_rate, &bit_rate, &use_numpy_obj)) {
         return -1;
     }
 
@@ -90,6 +142,27 @@ static int PyG722_init(PyG722* self, PyObject* args, PyObject* kwds) {
     }
     self->sample_rate = sample_rate;
     self->bit_rate = bit_rate;
+#if defined(WITH_NUMPY) && WITH_NUMPY
+    self->use_numpy = true;
+#else
+    self->use_numpy = false;
+#endif
+    if (use_numpy_obj != NULL) {
+        int use_numpy = PyObject_IsTrue(use_numpy_obj);
+        if (use_numpy < 0) {
+            return -1;
+        }
+#if defined(WITH_NUMPY) && WITH_NUMPY
+        self->use_numpy = use_numpy;
+#else
+        if (use_numpy) {
+            PyErr_SetString(PyExc_RuntimeError,
+              "NumPy output requested, but this build has no NumPy support. "
+              "Reinstall without LIBG722_NO_NUMPY=1.");
+            return -1;
+        }
+#endif
+    }
 
     return 0;
 }
@@ -105,9 +178,12 @@ static void PyG722_dealloc(PyG722* self) {
 static PyObject *
 PyG722_encode(PyG722* self, PyObject* args) {
     PyObject* item;
-    PyObject* seq;
+    PyObject* seq = NULL;
     int16_t* array;
     Py_ssize_t length, i, olength;
+    bool from_numpy = false;
+    bool from_buffer = false;
+    Py_buffer view;
 
     PyObject *rval = NULL;
     if (!PyArg_ParseTuple(args, "O", &item)) {
@@ -115,10 +191,32 @@ PyG722_encode(PyG722* self, PyObject* args) {
         goto e0;
     }
 
+#if defined(WITH_NUMPY) && WITH_NUMPY
     if (PyArray_Check(item) && PyArray_TYPE((PyArrayObject*)item) == NPY_INT16) {
         array = (int16_t *)PyArray_DATA((PyArrayObject*)item);
         length = PyArray_SIZE((PyArrayObject*)item);
+        from_numpy = true;
     } else {
+#endif
+        if (PyObject_CheckBuffer(item) &&
+            PyObject_GetBuffer(item, &view, PyBUF_CONTIG_RO | PyBUF_FORMAT) == 0) {
+            if (view.ndim != 1 || view.itemsize != (Py_ssize_t)sizeof(array[0]) ||
+                !is_i16_buffer_format(view.format)) {
+                PyBuffer_Release(&view);
+            } else if (view.len % sizeof(array[0]) != 0) {
+                PyBuffer_Release(&view);
+                PyErr_SetString(PyExc_TypeError, "Expected buffer with 16-bit samples");
+                goto e0;
+            } else {
+                array = (int16_t *)view.buf;
+                length = view.len / sizeof(array[0]);
+                from_buffer = true;
+                goto have_input;
+            }
+        } else {
+            PyErr_Clear();
+        }
+
         // Convert PyObject to a sequence if possible
         seq = PySequence_Fast(item, "Expected a sequence");
         if (seq == NULL) {
@@ -151,7 +249,10 @@ PyG722_encode(PyG722* self, PyObject* args) {
             }
             array[i] = (int16_t)tv;
         }
+#if defined(WITH_NUMPY) && WITH_NUMPY
     }
+#endif
+have_input:
     olength = self->sample_rate == 8000 ? length : length / 2;
     PyObject *obuf_obj = PyBytes_FromStringAndSize(NULL, olength);
     if (obuf_obj == NULL) {
@@ -169,17 +270,21 @@ PyG722_encode(PyG722* self, PyObject* args) {
 e3:
     Py_DECREF(obuf_obj);
 e2:
-    if (!PyArray_Check(item)) {
+    if (!from_numpy && !from_buffer) {
         free(array);
     }
 e1:
-    if (!PyArray_Check(item)) {
+    if (!from_numpy && !from_buffer) {
         Py_DECREF(seq);
+    }
+    if (from_buffer) {
+        PyBuffer_Release(&view);
     }
 e0:
     return rval;
 }
 
+#if defined(WITH_NUMPY) && WITH_NUMPY
 typedef struct {
     PyObject_HEAD
     void *data;  // Pointer to the data buffer
@@ -198,6 +303,7 @@ static PyTypeObject PyDataOwnerType = {
     .tp_flags = Py_TPFLAGS_DEFAULT,
     .tp_dealloc = (destructor)DataOwner_dealloc,
 };
+#endif
 
 // The get method for PyG722 objects
 static PyObject *
@@ -235,22 +341,27 @@ PyG722_decode(PyG722* self, PyObject* args) {
     }
     g722_decode(self->g722_dctx, buffer, length, array);
 
-    PyDataOwner* owner = PyObject_New(PyDataOwner, &PyDataOwnerType);
-    if (!owner) {
-        free(array);
-        return PyErr_NoMemory();
-    }
-    owner->data = array;
+#if defined(WITH_NUMPY) && WITH_NUMPY
+    if (self->use_numpy) {
+        PyDataOwner* owner = PyObject_New(PyDataOwner, &PyDataOwnerType);
+        if (!owner) {
+            free(array);
+            return PyErr_NoMemory();
+        }
+        owner->data = array;
 
-    // Create a new numpy array to hold the integers
-    npy_intp dims[1] = {olength};
-    PyObject* numpy_array = PyArray_SimpleNewFromData(1, dims, NPY_INT16, (void *)array);
-    if (numpy_array == NULL) goto e1;
-    PyArray_SetBaseObject((PyArrayObject*)numpy_array, (PyObject*)owner);
-    return numpy_array;
+        // Create a new numpy array to hold the integers
+        npy_intp dims[1] = {olength};
+        PyObject* numpy_array = PyArray_SimpleNewFromData(1, dims, NPY_INT16, (void *)array);
+        if (numpy_array == NULL) goto e1;
+        PyArray_SetBaseObject((PyArrayObject*)numpy_array, (PyObject*)owner);
+        return numpy_array;
 e1:
-    Py_DECREF(owner);
-    return NULL;
+        Py_DECREF(owner);
+        return NULL;
+    }
+#endif
+    return build_pcm16_array(array, olength);
 }
 
 static PyMethodDef PyG722_methods[] = {
@@ -292,11 +403,12 @@ PyMODINIT_FUNC PY_INIT_FUNC(void) {
     Py_INCREF(&PyG722Type);
     PyModule_AddObject(module, MODULE_NAME_STR, (PyObject*)&PyG722Type);
 
+#if defined(WITH_NUMPY) && WITH_NUMPY
     import_array();
 
     if (PyType_Ready(&PyDataOwnerType) < 0)
         return NULL;
+#endif
 
     return module;
 }
-
