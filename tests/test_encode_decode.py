@@ -2,13 +2,9 @@ import os
 import unittest
 import hashlib
 import numpy as np
-from sysconfig import get_platform
 
 from G722 import G722
 
-IS_S390X = get_platform() == 'linux-s390x'
-
-@unittest.skipIf(IS_S390X, "G722 encode/decode test is broken on BE; skipping until fixed")
 class TestEncodeDecode(unittest.TestCase):
     DATA_DIR = os.path.join(os.path.dirname(__file__), '../test_data')
     PCM_FILE = os.path.join(DATA_DIR, 'pcminb.dat')

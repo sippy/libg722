@@ -63,6 +63,56 @@ is_i16_buffer_format(const char *format)
         || strcmp(format, ">h") == 0;
 }
 
+static bool
+host_is_little_endian(void)
+{
+    uint16_t x = 1;
+    return *((const uint8_t *)&x) == 1;
+}
+
+static bool
+i16_buffer_format_is_native(const char *format)
+{
+    if (format == NULL || strcmp(format, "h") == 0 || strcmp(format, "=h") == 0) {
+        return true;
+    }
+    if (strcmp(format, "<h") == 0) {
+        return host_is_little_endian();
+    }
+    if (strcmp(format, ">h") == 0) {
+        return !host_is_little_endian();
+    }
+    return false;
+}
+
+static bool
+i16_buffer_format_is_little_endian(const char *format)
+{
+    if (format == NULL || strcmp(format, "h") == 0 || strcmp(format, "=h") == 0) {
+        return host_is_little_endian();
+    }
+    if (strcmp(format, "<h") == 0) {
+        return true;
+    }
+    if (strcmp(format, ">h") == 0) {
+        return false;
+    }
+    return host_is_little_endian();
+}
+
+static int16_t
+load_i16(const uint8_t *p, bool little_endian)
+{
+    uint16_t raw;
+
+    if (little_endian) {
+        raw = (uint16_t)p[0] | ((uint16_t)p[1] << 8);
+    } else {
+        raw = ((uint16_t)p[0] << 8) | (uint16_t)p[1];
+    }
+    return (int16_t)raw;
+}
+
 typedef struct {
     PyObject_HEAD
     G722_DEC_CTX *g722_dctx;
@@ -239,6 +289,7 @@ PyG722_encode(PyG722* self, PyObject* args) {
     Py_ssize_t length, i, olength;
     bool from_numpy = false;
     bool from_buffer = false;
+    bool from_buffer_copy = false;
     Py_buffer view;
 
     PyObject *rval = NULL;
@@ -263,9 +314,26 @@ PyG722_encode(PyG722* self, PyObject* args) {
             PyErr_SetString(PyExc_TypeError, "Expected buffer with 16-bit samples");
             goto e0;
         } else {
-            array = (int16_t *)view.buf;
             length = view.len / sizeof(array[0]);
+            if (i16_buffer_format_is_native(view.format)) {
+                array = (int16_t *)view.buf;
+                from_buffer = true;
+                goto have_input;
+            }
+
+            array = (int16_t *)malloc(length * sizeof(array[0]));
+            if (!array) {
+                PyBuffer_Release(&view);
+                rval = PyErr_NoMemory();
+                goto e0;
+            }
+            bool src_is_little = i16_buffer_format_is_little_endian(view.format);
+            for (i = 0; i < length; i++) {
+                const uint8_t *bp = ((const uint8_t *)view.buf) + (i * sizeof(array[0]));
+                array[i] = load_i16(bp, src_is_little);
+            }
             from_buffer = true;
+            from_buffer_copy = true;
             goto have_input;
         }
     } else {
@@ -322,7 +390,9 @@ have_input:
 e3:
     Py_DECREF(obuf_obj);
 e2:
-    if (!from_numpy && !from_buffer) {
+    if (from_buffer_copy) {
+        free(array);
+    } else if (!from_numpy && !from_buffer) {
         free(array);
     }
 e1:

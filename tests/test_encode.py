@@ -31,5 +31,20 @@ class TestEncoder(unittest.TestCase):
                 for sample_input in sample_inputs:
                     do_test(bitrate, sample_rate, sample_input)
 
+    def test_encode_numpy_endian_invariance(self):
+        native = np.array((1000, -1000, 12345, -12345), dtype=np.int16)
+        little = native.astype('<i2', copy=True)
+        big = native.astype('>i2', copy=True)
+
+        def do_encode(samples):
+            return G722(8000, 64000).encode(samples)
+
+        got_native = do_encode(native)
+        got_little = do_encode(little)
+        got_big = do_encode(big)
+
+        self.assertEqual(got_native, got_little)
+        self.assertEqual(got_native, got_big)
+
 if __name__ == '__main__':
     unittest.main()
