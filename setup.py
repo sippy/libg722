@@ -118,7 +118,7 @@ def main():
 
     mod_name = "G722"
     mod_name_dbg = mod_name + "_debug"
-    version = '1.2.3'
+    version = '1.2.4'
     repo_dir = realpath(dirname(__file__))
     package_variant = get_package_variant(repo_dir)
     src_dir = "."
