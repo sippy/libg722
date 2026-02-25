@@ -136,20 +136,22 @@ jobs:
         pip install --upgrade setuptools wheel
       shell: bash
 
-    - name: build (no numpy)
-      run: LIBG722_NO_NUMPY=1 CC=${COMPILER} python setup.py sdist build
+    - name: build core
+      run: |
+        rm -rf dist build
+        CC=${COMPILER} python setup.py sdist build
       shell: bash
 
-    - name: install (no numpy)
-      run: LIBG722_NO_NUMPY=1 pip install --force-reinstall dist/[Gg]722*.gz
+    - name: install core
+      run: pip install --force-reinstall dist/[Gg]722-*.gz
       shell: bash
 
-    - name: test (no numpy)
+    - name: test core
       if: matrix.os != 'windows'
       run: ./scripts/do-test.sh "python test.py"
       shell: bash
 
-    - name: unit tests (no numpy smoke)
+    - name: unit tests (core smoke)
       run: python -m unittest discover tests 'test_decode.py'
       shell: bash
 
@@ -157,15 +159,17 @@ jobs:
       run: pip install -r python/requirements.txt
       shell: bash
 
-    - name: build
-      run: CC=${COMPILER} python setup.py sdist build
+    - name: build numpy addon
+      run: |
+        rm -rf dist build
+        LIBG722_PACKAGE_VARIANT=numpy-addon CC=${COMPILER} python setup.py sdist build
       shell: bash
 
-    - name: install
-      run: pip install --force-reinstall dist/[Gg]722*.gz
+    - name: install numpy addon
+      run: LIBG722_PACKAGE_VARIANT=numpy-addon pip install --force-reinstall --no-deps dist/*numpy*.gz
       shell: bash
 
-    - name: test
+    - name: test with numpy addon
       if: matrix.os != 'windows'
       run: ./scripts/do-test.sh "python test.py"
       shell: bash
@@ -216,7 +220,10 @@ jobs:
         pip install -r python/requirements.txt
 
     - name: Build SDist
-      run: python setup.py sdist
+      run: |
+        rm -rf dist
+        python setup.py sdist
+        LIBG722_PACKAGE_VARIANT=numpy-addon python setup.py sdist
 
     - name: Show context tree
       run: ls -lR dist
@@ -227,6 +234,7 @@ jobs:
         GIT_BRANCH="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
         GIT_BRANCH="${GIT_BRANCH#refs/tags/}"
         python setup.py checkversion --tag="${GIT_BRANCH}"
+        LIBG722_PACKAGE_VARIANT=numpy-addon python setup.py checkversion --tag="${GIT_BRANCH}"
 
     - name: Publish package distributions to PyPI
       if: github.event_name == 'release' && github.event.action == 'published'

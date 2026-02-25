@@ -50,7 +50,7 @@ class TestEncodeDecode(unittest.TestCase):
                                      f"MD5 mismatch for {key}")
 
                     decoded = codec.decode(encoded)
-                    decoded_le = decoded.astype('<i2')
+                    decoded_le = np.asarray(decoded, dtype='<i2')
                     decoded_bytes = decoded_le.tobytes()
                     self.assertEqual(len(decoded), len(self.pcm),
                                      f"Decoded size mismatch for {key}")

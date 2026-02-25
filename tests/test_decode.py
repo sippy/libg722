@@ -36,6 +36,5 @@ class TestDecoder(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 G722(8000, 64000, True)
 
-
 if __name__ == '__main__':
     unittest.main()

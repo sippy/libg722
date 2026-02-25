@@ -29,11 +29,8 @@
 #include <string.h>
 
 #include <Python.h>
-#if defined(WITH_NUMPY) && WITH_NUMPY
-#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
-#include <numpy/arrayobject.h>
-#endif
 
+#include "G722_numpy_api.h"
 #include "g722_encoder.h"
 #include "g722_decoder.h"
 
@@ -73,6 +70,8 @@ typedef struct {
     int sample_rate;
     int bit_rate;
     bool use_numpy;
+    const G722NumpyAPI *numpy_api;
+    PyObject *numpy_module;
 } PyG722;
 
 static PyObject *
@@ -110,9 +109,61 @@ build_pcm16_array(int16_t *array, Py_ssize_t olength) {
     return result;
 }
 
+static int
+load_numpy_api(PyG722 *self, bool required)
+{
+    PyObject *numpy_mod = PyImport_ImportModule("G722_numpy");
+    PyObject *capsule = NULL;
+    const G722NumpyAPI *api = NULL;
+
+    if (numpy_mod == NULL) {
+        if (!required) {
+            PyErr_Clear();
+            return 0;
+        }
+        PyErr_Clear();
+        PyErr_SetString(PyExc_RuntimeError,
+          "NumPy output requested, but optional package G722-numpy is not installed. "
+          "Install with `pip install G722[numpy]` or `pip install G722-numpy`.");
+        return -1;
+    }
+
+    capsule = PyObject_GetAttrString(numpy_mod, "_C_API");
+    if (capsule == NULL) {
+        Py_DECREF(numpy_mod);
+        if (!required) {
+            PyErr_Clear();
+            return 0;
+        }
+        PyErr_Clear();
+        PyErr_SetString(PyExc_RuntimeError,
+          "Optional NumPy backend is incompatible: missing G722_numpy._C_API.");
+        return -1;
+    }
+
+    api = (const G722NumpyAPI *)PyCapsule_GetPointer(capsule, G722_NUMPY_CAPSULE_NAME);
+    Py_DECREF(capsule);
+    if (api == NULL) {
+        Py_DECREF(numpy_mod);
+        if (!required) {
+            PyErr_Clear();
+            return 0;
+        }
+        PyErr_Clear();
+        PyErr_SetString(PyExc_RuntimeError,
+          "Optional NumPy backend is incompatible: invalid G722_numpy._C_API.");
+        return -1;
+    }
+
+    self->numpy_api = api;
+    self->numpy_module = numpy_mod;
+    return 1;
+}
+
 static int PyG722_init(PyG722* self, PyObject* args, PyObject* kwds) {
     int sample_rate, bit_rate, options;
     PyObject *use_numpy_obj = NULL;
+    int use_numpy = -1;
     static char *kwlist[] = {"sample_rate", "bit_rate", "use_numpy", NULL};
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "ii|O", kwlist, &sample_rate, &bit_rate, &use_numpy_obj)) {
@@ -142,26 +193,30 @@ static int PyG722_init(PyG722* self, PyObject* args, PyObject* kwds) {
     }
     self->sample_rate = sample_rate;
     self->bit_rate = bit_rate;
-#if defined(WITH_NUMPY) && WITH_NUMPY
-    self->use_numpy = true;
-#else
     self->use_numpy = false;
-#endif
+    self->numpy_api = NULL;
+    self->numpy_module = NULL;
     if (use_numpy_obj != NULL) {
-        int use_numpy = PyObject_IsTrue(use_numpy_obj);
+        if (use_numpy_obj != Py_None) {
+            use_numpy = PyObject_IsTrue(use_numpy_obj);
+        }
         if (use_numpy < 0) {
             return -1;
         }
-#if defined(WITH_NUMPY) && WITH_NUMPY
-        self->use_numpy = use_numpy;
-#else
-        if (use_numpy) {
-            PyErr_SetString(PyExc_RuntimeError,
-              "NumPy output requested, but this build has no NumPy support. "
-              "Reinstall without LIBG722_NO_NUMPY=1.");
+    }
+    if (use_numpy != 0) {
+        bool required = (use_numpy > 0);
+        int loaded = load_numpy_api(self, required);
+        if (loaded < 0) {
             return -1;
         }
-#endif
+        if (loaded > 0) {
+            self->use_numpy = true;
+        } else if (required) {
+            return -1;
+        } else {
+            self->use_numpy = false;
+        }
     }
 
     return 0;
@@ -171,6 +226,7 @@ static int PyG722_init(PyG722* self, PyObject* args, PyObject* kwds) {
 static void PyG722_dealloc(PyG722* self) {
     g722_encoder_destroy(self->g722_ectx);
     g722_decoder_destroy(self->g722_dctx);
+    Py_XDECREF(self->numpy_module);
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
@@ -191,67 +247,63 @@ PyG722_encode(PyG722* self, PyObject* args) {
         goto e0;
     }
 
-#if defined(WITH_NUMPY) && WITH_NUMPY
-    if (PyArray_Check(item) && PyArray_TYPE((PyArrayObject*)item) == NPY_INT16) {
-        array = (int16_t *)PyArray_DATA((PyArrayObject*)item);
-        length = PyArray_SIZE((PyArrayObject*)item);
+    if (self->numpy_api != NULL &&
+        self->numpy_api->check_int16_1d(item, &array, &length)) {
         from_numpy = true;
-    } else {
-#endif
-        if (PyObject_CheckBuffer(item) &&
-            PyObject_GetBuffer(item, &view, PyBUF_CONTIG_RO | PyBUF_FORMAT) == 0) {
-            if (view.ndim != 1 || view.itemsize != (Py_ssize_t)sizeof(array[0]) ||
-                !is_i16_buffer_format(view.format)) {
-                PyBuffer_Release(&view);
-            } else if (view.len % sizeof(array[0]) != 0) {
-                PyBuffer_Release(&view);
-                PyErr_SetString(PyExc_TypeError, "Expected buffer with 16-bit samples");
-                goto e0;
-            } else {
-                array = (int16_t *)view.buf;
-                length = view.len / sizeof(array[0]);
-                from_buffer = true;
-                goto have_input;
-            }
-        } else {
-            PyErr_Clear();
-        }
-
-        // Convert PyObject to a sequence if possible
-        seq = PySequence_Fast(item, "Expected a sequence");
-        if (seq == NULL) {
-            PyErr_SetString(PyExc_TypeError, "Expected a sequence");
-            goto e0;
-        }
-
-        // Get the length of the sequence
-        length = PySequence_Size(seq);
-        if (length == -1) {
-            PyErr_SetString(PyExc_TypeError, "Error getting sequence length");
-            goto e1;
-        }
-
-        // Allocate memory for the int array
-        array = (int16_t*) malloc(length * sizeof(array[0]));
-        if (!array) {
-            rval = PyErr_NoMemory();
-            goto e1;
-        }
-        for (i = 0; i < length; i++) {
-            PyObject* temp_item = PySequence_Fast_GET_ITEM(seq, i);  // Borrowed reference, no need to Py_DECREF
-            long tv = PyLong_AsLong(temp_item);
-            if (PyErr_Occurred()) {
-                goto e2;
-            }
-            if (tv < -32768 || tv > 32767) {
-                PyErr_SetString(PyExc_ValueError, "Value out of range");
-                goto e2;
-            }
-            array[i] = (int16_t)tv;
-        }
-#if defined(WITH_NUMPY) && WITH_NUMPY
+        goto have_input;
     }
-#endif
+
+    if (PyObject_CheckBuffer(item) &&
+        PyObject_GetBuffer(item, &view, PyBUF_CONTIG_RO | PyBUF_FORMAT) == 0) {
+        if (view.ndim != 1 || view.itemsize != (Py_ssize_t)sizeof(array[0]) ||
+            !is_i16_buffer_format(view.format)) {
+            PyBuffer_Release(&view);
+        } else if (view.len % sizeof(array[0]) != 0) {
+            PyBuffer_Release(&view);
+            PyErr_SetString(PyExc_TypeError, "Expected buffer with 16-bit samples");
+            goto e0;
+        } else {
+            array = (int16_t *)view.buf;
+            length = view.len / sizeof(array[0]);
+            from_buffer = true;
+            goto have_input;
+        }
+    } else {
+        PyErr_Clear();
+    }
+
+    // Convert PyObject to a sequence if possible
+    seq = PySequence_Fast(item, "Expected a sequence");
+    if (seq == NULL) {
+        PyErr_SetString(PyExc_TypeError, "Expected a sequence");
+        goto e0;
+    }
+
+    // Get the length of the sequence
+    length = PySequence_Size(seq);
+    if (length == -1) {
+        PyErr_SetString(PyExc_TypeError, "Error getting sequence length");
+        goto e1;
+    }
+
+    // Allocate memory for the int array
+    array = (int16_t*) malloc(length * sizeof(array[0]));
+    if (!array) {
+        rval = PyErr_NoMemory();
+        goto e1;
+    }
+    for (i = 0; i < length; i++) {
+        PyObject* temp_item = PySequence_Fast_GET_ITEM(seq, i);  // Borrowed reference, no need to Py_DECREF
+        long tv = PyLong_AsLong(temp_item);
+        if (PyErr_Occurred()) {
+            goto e2;
+        }
+        if (tv < -32768 || tv > 32767) {
+            PyErr_SetString(PyExc_ValueError, "Value out of range");
+            goto e2;
+        }
+        array[i] = (int16_t)tv;
+    }
 have_input:
     olength = self->sample_rate == 8000 ? length : length / 2;
     PyObject *obuf_obj = PyBytes_FromStringAndSize(NULL, olength);
@@ -283,27 +335,6 @@ e1:
 e0:
     return rval;
 }
-
-#if defined(WITH_NUMPY) && WITH_NUMPY
-typedef struct {
-    PyObject_HEAD
-    void *data;  // Pointer to the data buffer
-} PyDataOwner;
-
-static void
-DataOwner_dealloc(PyDataOwner* self) {
-    free(self->data);  // Free the memory when the object is deallocated
-    Py_TYPE(self)->tp_free((PyObject*)self);
-}
-
-static PyTypeObject PyDataOwnerType = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "DataOwner",
-    .tp_basicsize = sizeof(PyDataOwner),
-    .tp_flags = Py_TPFLAGS_DEFAULT,
-    .tp_dealloc = (destructor)DataOwner_dealloc,
-};
-#endif
 
 // The get method for PyG722 objects
 static PyObject *
@@ -341,26 +372,14 @@ PyG722_decode(PyG722* self, PyObject* args) {
     }
     g722_decode(self->g722_dctx, buffer, length, array);
 
-#if defined(WITH_NUMPY) && WITH_NUMPY
     if (self->use_numpy) {
-        PyDataOwner* owner = PyObject_New(PyDataOwner, &PyDataOwnerType);
-        if (!owner) {
+        if (self->numpy_api == NULL) {
             free(array);
-            return PyErr_NoMemory();
+            PyErr_SetString(PyExc_RuntimeError, "Internal error: NumPy backend requested but not loaded.");
+            return NULL;
         }
-        owner->data = array;
-
-        // Create a new numpy array to hold the integers
-        npy_intp dims[1] = {olength};
-        PyObject* numpy_array = PyArray_SimpleNewFromData(1, dims, NPY_INT16, (void *)array);
-        if (numpy_array == NULL) goto e1;
-        PyArray_SetBaseObject((PyArrayObject*)numpy_array, (PyObject*)owner);
-        return numpy_array;
-e1:
-        Py_DECREF(owner);
-        return NULL;
+        return self->numpy_api->from_pcm16_owned(array, olength);
     }
-#endif
     return build_pcm16_array(array, olength);
 }
 
@@ -402,13 +421,6 @@ PyMODINIT_FUNC PY_INIT_FUNC(void) {
 
     Py_INCREF(&PyG722Type);
     PyModule_AddObject(module, MODULE_NAME_STR, (PyObject*)&PyG722Type);
-
-#if defined(WITH_NUMPY) && WITH_NUMPY
-    import_array();
-
-    if (PyType_Ready(&PyDataOwnerType) < 0)
-        return NULL;
-#endif
 
     return module;
 }

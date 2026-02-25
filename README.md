@@ -76,10 +76,17 @@ git clone https://github.com/sippy/libg722.git
 pip install libg722/
 ```
 
-To build/install without NumPy support, set `LIBG722_NO_NUMPY=1`:
+This builds the **core** package (`G722`) with no hard dependency on NumPy.
+To install NumPy decode support on demand:
 
 ```
-LIBG722_NO_NUMPY=1 pip install libg722/
+pip install "G722[numpy]"
+```
+
+or:
+
+```
+pip install G722-numpy
 ```
 
 `LIBG722_BUILD_MODE` controls build profile for the main `G722` extension:
@@ -87,10 +94,14 @@ LIBG722_NO_NUMPY=1 pip install libg722/
 - `debug`: build with `-g3 -O0`.
 - `auto` (default): if `.` is a git repository, run `git diff v{version} -- .`; build in `debug` mode when it differs, otherwise `production`. If `.` is not a git repository, use `production`.
 
+`LIBG722_PACKAGE_VARIANT` controls which Python distribution is built from this repository:
+- `core` (default): builds/publishes `G722`.
+- `numpy-addon`: builds/publishes `G722-numpy` from `python/G722_numpy_mod.c`.
+
 `G722(sample_rate, bit_rate, use_numpy=None)` accepts an optional `use_numpy` flag:
-- `True`: return NumPy arrays from `decode()` (raises if built without NumPy support).
+- `True`: return NumPy arrays from `decode()` (raises if `G722-numpy` is not installed).
 - `False`: return Python `array('h')` from `decode()`.
-- omitted: use the build default (NumPy arrays when available, otherwise `array('h')`).
+- omitted: auto-detect the optional backend and use NumPy when available, otherwise `array('h')`.
 
 ## Pull library into your Docker container:
 ```

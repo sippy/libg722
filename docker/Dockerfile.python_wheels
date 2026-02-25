@@ -29,6 +29,7 @@ COPY --exclude=.git --exclude=.github --exclude=docker --exclude=dist \
  --exclude=scripts . .
 
 RUN ${PYTHON_CMD} -m build --wheel
+RUN LIBG722_PACKAGE_VARIANT=numpy-addon ${PYTHON_CMD} -m build --wheel
 RUN auditwheel repair dist/*.whl --wheel-dir dist_out
 
 FROM build AS test

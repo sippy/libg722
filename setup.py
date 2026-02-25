@@ -2,29 +2,59 @@
 
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
-from os.path import exists, realpath, dirname
+from os.path import exists, realpath, dirname, join as path_join
 from os import environ
 from subprocess import run, PIPE
-from sys import argv as sys_argv, path as sys_path
+from sys import path as sys_path
 
 from sysconfig import get_platform
 
 sys_path.insert(0, realpath(dirname(__file__)))
 from build_tools.CheckVersion import CheckVersion
 
-NO_NUMPY_ENVVAR = "LIBG722_NO_NUMPY"
 BUILD_MODE_ENVVAR = "LIBG722_BUILD_MODE"
+PACKAGE_VARIANT_ENVVAR = "LIBG722_PACKAGE_VARIANT"
 
 
-def env_flag_is_true(name):
-    value = environ.get(name)
+def infer_package_variant_from_metadata(repo_dir):
+    fname = path_join(repo_dir, "PKG-INFO")
+    if not exists(fname):
+        return None
+    with open(fname, "r", encoding="utf-8", errors="replace") as fh:
+        for line in fh:
+            if not line.startswith("Name:"):
+                continue
+            name = line.split(":", 1)[1].strip().lower().replace("_", "-")
+            if name == "g722-numpy":
+                return "numpy-addon"
+            if name == "g722":
+                return "core"
+            break
+    return None
+
+
+def get_package_variant(repo_dir):
+    value = environ.get(PACKAGE_VARIANT_ENVVAR)
     if value is None:
-        return False
-    return value.strip().lower() in {"1", "true", "yes", "on"}
-
-
-def is_numpy_requirement(requirement):
-    return requirement.split(";", 1)[0].strip().lower() == "numpy"
+        inferred = infer_package_variant_from_metadata(repo_dir)
+        if inferred is not None:
+            return inferred
+        return "core"
+    value = value.strip().lower()
+    aliases = {
+        "main": "core",
+        "base": "core",
+        "addon": "numpy-addon",
+        "numpy": "numpy-addon",
+        "numpy_addon": "numpy-addon",
+    }
+    value = aliases.get(value, value)
+    if value not in {"core", "numpy-addon"}:
+        raise RuntimeError(
+            f"Invalid {PACKAGE_VARIANT_ENVVAR}={value!r}. "
+            f"Expected one of: core, numpy-addon."
+        )
+    return value
 
 
 def get_build_mode_setting():
@@ -86,34 +116,67 @@ def resolve_build_mode(repo_dir, version):
 
 def main():
 
-    mod_name = 'G722'
-    mod_name_dbg = mod_name + '_debug'
+    mod_name = "G722"
+    mod_name_dbg = mod_name + "_debug"
     version = '1.2.3'
     repo_dir = realpath(dirname(__file__))
-    with_numpy = not env_flag_is_true(NO_NUMPY_ENVVAR)
+    package_variant = get_package_variant(repo_dir)
+    src_dir = "."
+    py_src_dir = "python"
+
+    mod_fname = mod_name + "_mod.c"
+
+    readme_path = path_join(repo_dir, "README.md")
+    if exists(readme_path):
+        with open(readme_path, "r", encoding="utf-8", errors="replace") as fh:
+            long_description = fh.read()
+    else:
+        long_description = "This is a package for G.722 module"
+
+    if package_variant == "numpy-addon":
+        class BuildExtWithNumpy(build_ext):
+            def finalize_options(self):
+                super().finalize_options()
+                try:
+                    import numpy as np
+                except ImportError:
+                    # During build requirement discovery NumPy may not be installed yet.
+                    # setup_requires requests it; finalize_options runs again for build.
+                    return
+                if self.include_dirs is None:
+                    self.include_dirs = []
+                self.include_dirs.append(np.get_include())
+
+        addon_module = Extension(
+            "G722_numpy",
+            sources=[path_join(py_src_dir, "G722_numpy_mod.c")],
+            include_dirs=[py_src_dir],
+        )
+        kwargs = {
+            "name": "G722-numpy",
+            "version": version,
+            "description": "Optional NumPy backend for G.722 module",
+            "long_description": long_description,
+            "long_description_content_type": "text/markdown",
+            "author": "Maksym Sobolyev",
+            "author_email": "sobomax@sippysoft.com",
+            "url": "https://github.com/sippy/libg722",
+            "ext_modules": [addon_module],
+            "setup_requires": ["numpy"],
+            "install_requires": [f"G722=={version}", "numpy"],
+            "cmdclass": {"checkversion": CheckVersion, "build_ext": BuildExtWithNumpy},
+            "license": "Public-Domain",
+            "classifiers": [
+                "Operating System :: OS Independent",
+                "Programming Language :: C",
+                "Programming Language :: Python",
+            ],
+        }
+        setup(**kwargs)
+        return
+
     build_mode = resolve_build_mode(repo_dir, version)
     is_debug_build = build_mode == "debug"
-
-    mod_dir = dirname(realpath(sys_argv[0]))
-    src_dir = './' if exists('g722_decode.c') else '../'
-    mod_fname = mod_name + '_mod.c'
-    mod_dir = '' if exists(mod_fname) else 'python/'
-
-    class BuildExtWithOptionalNumpy(build_ext):
-        def finalize_options(self):
-            super().finalize_options()
-            if not with_numpy:
-                return
-            try:
-                import numpy as np
-            except ImportError as exc:
-                raise RuntimeError(
-                    f"NumPy headers are required to build with NumPy support. "
-                    f"Install numpy or set {NO_NUMPY_ENVVAR}=1 to build without NumPy support."
-                ) from exc
-            if self.include_dirs is None:
-                self.include_dirs = []
-            self.include_dirs.append(np.get_include())
 
     is_win = get_platform().startswith('win')
     is_mac = get_platform().startswith('macosx-')
@@ -130,7 +193,7 @@ def main():
         if not is_win:
             link_args.append('-O2')
     if not is_mac and not is_win:
-        smap_fname = f'{mod_dir}symbols.map'
+        smap_fname = path_join(py_src_dir, "symbols.map")
         link_args.append(f'-Wl,--version-script={smap_fname}')
     debug_cflags = ['-DDEBUG_MOD']
     debug_link_args = []
@@ -138,9 +201,12 @@ def main():
         debug_cflags = ['-g3', '-O0', '-DDEBUG_MOD']
         debug_link_args = ['-g3', '-O0']
     mod_common_args = {
-        'sources': [mod_dir + mod_fname, src_dir + 'g722_decode.c', src_dir + 'g722_encode.c'],
-        'include_dirs': [src_dir],
-        'define_macros': [('WITH_NUMPY', '1' if with_numpy else '0')],
+        'sources': [
+            path_join(py_src_dir, mod_fname),
+            path_join(src_dir, 'g722_decode.c'),
+            path_join(src_dir, 'g722_encode.c'),
+        ],
+        'include_dirs': [src_dir, py_src_dir],
         'extra_compile_args': compile_args,
         'extra_link_args': link_args
     }
@@ -150,14 +216,6 @@ def main():
 
     module1 = Extension(mod_name, **mod_common_args)
     module2 = Extension(mod_name_dbg, **mod_debug_args)
-
-    with open(mod_dir + "requirements.txt", "r") as req_fh:
-        requirements = [x.strip() for x in req_fh.readlines() if x.strip()]
-    if not with_numpy:
-        requirements = [x for x in requirements if not is_numpy_requirement(x)]
-    setup_requirements = [] if not with_numpy else ['numpy']
-    with open(src_dir + "README.md", "r") as fh:
-        long_description = fh.read()
 
     kwargs = {
         'name':mod_name,
@@ -169,9 +227,9 @@ def main():
         'author_email':'sobomax@sippysoft.com',
         'url':'https://github.com/sippy/libg722',
         'ext_modules': [module1, module2],
-        'setup_requires': setup_requirements,
-        'install_requires': requirements,
-        'cmdclass': {'checkversion': CheckVersion, 'build_ext': BuildExtWithOptionalNumpy},
+        'install_requires': [],
+        'extras_require': {'numpy': [f'G722-numpy=={version}']},
+        'cmdclass': {'checkversion': CheckVersion},
         'license': 'Public-Domain',
         'classifiers': [
                 'Operating System :: OS Independent',
