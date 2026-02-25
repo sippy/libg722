@@ -82,6 +82,11 @@ To build/install without NumPy support, set `LIBG722_NO_NUMPY=1`:
 LIBG722_NO_NUMPY=1 pip install libg722/
 ```
 
+`LIBG722_BUILD_MODE` controls build profile for the main `G722` extension:
+- `production`: build with optimization (`-O2`, or `/O2` on Windows).
+- `debug`: build with `-g3 -O0`.
+- `auto` (default): if `.` is a git repository, run `git diff v{version} -- .`; build in `debug` mode when it differs, otherwise `production`. If `.` is not a git repository, use `production`.
+
 `G722(sample_rate, bit_rate, use_numpy=None)` accepts an optional `use_numpy` flag:
 - `True`: return NumPy arrays from `decode()` (raises if built without NumPy support).
 - `False`: return Python `array('h')` from `decode()`.
