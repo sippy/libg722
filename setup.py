@@ -73,34 +73,37 @@ def get_build_mode_setting():
     return value
 
 
+def run_git_command(args, repo_dir):
+    try:
+        return run(
+            ["git", "-C", repo_dir] + args,
+            stdout=PIPE,
+            stderr=PIPE,
+            text=True,
+            check=False,
+        )
+    except FileNotFoundError:
+        return None
+
+
 def git_has_diff_against_tag(repo_dir, tag):
-    is_repo = run(
-        ["git", "-C", repo_dir, "rev-parse", "--is-inside-work-tree"],
-        stdout=PIPE,
-        stderr=PIPE,
-        text=True,
-        check=False,
-    )
+    is_repo = run_git_command(["rev-parse", "--is-inside-work-tree"], repo_dir)
+    if is_repo is None:
+        return None
     if is_repo.returncode != 0 or is_repo.stdout.strip() != "true":
         return None
 
-    has_tag = run(
-        ["git", "-C", repo_dir, "rev-parse", "-q", "--verify", f"refs/tags/{tag}"],
-        stdout=PIPE,
-        stderr=PIPE,
-        text=True,
-        check=False,
+    has_tag = run_git_command(
+        ["rev-parse", "-q", "--verify", f"refs/tags/{tag}"], repo_dir
     )
+    if has_tag is None:
+        return None
     if has_tag.returncode != 0:
         return True
 
-    diff = run(
-        ["git", "-C", repo_dir, "diff", "--quiet", tag, "--", "."],
-        stdout=PIPE,
-        stderr=PIPE,
-        text=True,
-        check=False,
-    )
+    diff = run_git_command(["diff", "--quiet", tag, "--", "."], repo_dir)
+    if diff is None:
+        return None
     return diff.returncode != 0
 
 

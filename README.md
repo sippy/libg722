@@ -92,7 +92,7 @@ pip install G722-numpy
 `LIBG722_BUILD_MODE` controls build profile for the main `G722` extension:
 - `production`: build with optimization (`-O2`, or `/O2` on Windows).
 - `debug`: build with `-g3 -O0`.
-- `auto` (default): if `.` is a git repository, run `git diff v{version} -- .`; build in `debug` mode when it differs, otherwise `production`. If `.` is not a git repository, use `production`.
+- `auto` (default): if `.` is a git repository and `git` is available, run `git diff v{version} -- .`; build in `debug` mode when it differs, otherwise `production`. If `.` is not a git repository or `git` is unavailable, use `production`.
 
 `LIBG722_PACKAGE_VARIANT` controls which Python distribution is built from this repository:
 - `core` (default): builds/publishes `G722`.
