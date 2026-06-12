@@ -96,7 +96,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14-dev']
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14', '3.15-dev']
         compiler: ['gcc', 'clang']
         os: [macos, ubuntu]
         include:
@@ -112,7 +112,7 @@ jobs:
         - python-version: '3.13'
           compiler: microsoft
           os: windows
-        - python-version: '3.14-dev'
+        - python-version: '3.14'
           compiler: microsoft
           os: windows
 
@@ -179,7 +179,7 @@ jobs:
     permissions:
       packages: write
     needs: [build_test_python]
-    uses: sippy/cimagic/.github/workflows/BuildPythonWheels.yml@v2
+    uses: sippy/cimagic/.github/workflows/BuildPythonWheels.yml@v3
     with:
       maximize_space: true
 
