@@ -34,11 +34,12 @@ def infer_package_variant_from_metadata(repo_dir):
 
 
 def get_package_variant(repo_dir):
+    inferred = infer_package_variant_from_metadata(repo_dir)
+    if inferred is not None:
+        return inferred
+
     value = environ.get(PACKAGE_VARIANT_ENVVAR)
     if value is None:
-        inferred = infer_package_variant_from_metadata(repo_dir)
-        if inferred is not None:
-            return inferred
         return "core"
     value = value.strip().lower()
     aliases = {
