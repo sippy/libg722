@@ -40,7 +40,7 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Install Dependencies (Ubuntu)
       if: matrix.os == 'ubuntu'
@@ -84,7 +84,7 @@ jobs:
 
     - name: Upload Windows DLL
       if: matrix.os == 'windows'
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: g722.dll
         path: build/**/g722.dll
@@ -140,10 +140,10 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -212,17 +212,17 @@ jobs:
       contents: read
       id-token: write
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Download all wheel artifacts
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         path: dist
         pattern: 'dist-*'
         merge-multiple: true
 
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: '3.13'
 
@@ -266,21 +266,21 @@ jobs:
       DOCKER_RW: ${{ ( github.repository == 'sippy/libg722' && github.event_name != 'pull_request' ) && 'true' || 'false' }}
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Set up QEMU
       id: qemu
-      uses: docker/setup-qemu-action@v3
+      uses: docker/setup-qemu-action@v4
 
     - name: Log in to Docker Hub
       if: env.DOCKER_RW == 'true'
-      uses: docker/login-action@v3
+      uses: docker/login-action@v4
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      uses: docker/setup-buildx-action@v4
 
     - name: Set environments
       run: |
@@ -303,7 +303,7 @@ jobs:
 
     - name: Extract metadata (tags, labels) for Docker
       id: meta
-      uses: docker/metadata-action@v5
+      uses: docker/metadata-action@v6
       with:
         images: ${{ env.DOCKER_REPO }}
         tags: |
@@ -315,9 +315,11 @@ jobs:
           type=sha,suffix=-${{ env.OS_TAG }}
 
     - name: Build Docker image
-      uses: docker/build-push-action@v6
+      uses: docker/build-push-action@v7
       env:
         CACHE_SPEC: "type=registry,ref=${{ env.DOCKER_REPO }}:${{ env.GIT_BRANCH }}-${{ env.OS_TAG}}-buildcache"
+        DOCKER_BUILD_SUMMARY: false
+        DOCKER_BUILD_RECORD_UPLOAD: false
       with:
         context: .
         file: ./docker/Dockerfile.build
@@ -333,7 +335,7 @@ jobs:
   build_packages:
     name: Build Packages
     needs: [build_test]
-    uses: sippy/cimagic/.github/workflows/BuildDPKGs.yml@v2
+    uses: sippy/cimagic/.github/workflows/BuildDPKGs.yml@v3
     with:
       apt_depends: pkg-config cmake ninja-build
 
@@ -342,7 +344,7 @@ jobs:
     needs: [publish_all_wheels, build_packages]
     permissions:
       contents: write
-    uses: sippy/cimagic/.github/workflows/RollReleaseDraft.yml@v2
+    uses: sippy/cimagic/.github/workflows/RollReleaseDraft.yml@v3
     with:
       release_files_artifacts: |
         g722.xcframework
