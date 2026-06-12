@@ -25,7 +25,9 @@
  *
  */
 
-#if defined(__FreeBSD__)
+#if defined(_WIN32)
+#include <stdlib.h>
+#elif defined(__FreeBSD__)
 #include <sys/endian.h>
 #elif defined(__APPLE__)
 #include <machine/endian.h>
@@ -33,10 +35,10 @@
 #else
 #include <endian.h>
 #endif
-#include <getopt.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "g722_encoder.h"
 #include "g722_decoder.h"
@@ -47,6 +49,12 @@
 #define htobe16(x) OSSwapHostToBigInt16(x)
 #define le16toh(x) OSSwapLittleToHostInt16(x)
 #define be16toh(x) OSSwapBigToHostInt16(x)
+#elif defined(_WIN32)
+#define g722_bswap16(x) ((uint16_t) ((((uint16_t) (x) & 0x00ff) << 8) | (((uint16_t) (x) & 0xff00) >> 8)))
+#define htole16(x) (x)
+#define le16toh(x) (x)
+#define htobe16(x) ((int16_t) g722_bswap16(x))
+#define be16toh(x) ((int16_t) g722_bswap16(x))
 #endif
 
 #define BUFFER_SIZE 10
@@ -61,6 +69,34 @@ usage(const char *argv0)
     exit (1);
 }
 
+static int
+parse_options(int argc, char **argv, int *srate, int *oblen, int *enc, int *bend)
+{
+    int argi;
+
+    *srate = G722_SAMPLE_RATE_8000;
+    *oblen = 1;
+    *enc = 0;
+    *bend = 0;
+
+    for (argi = 1; argi < argc; argi++) {
+        if (strcmp(argv[argi], "--sln16k") == 0) {
+            *srate &= ~G722_SAMPLE_RATE_8000;
+            *oblen = 2;
+        } else if (strcmp(argv[argi], "--encode") == 0 || strcmp(argv[argi], "--enc") == 0) {
+            *enc = 1;
+        } else if (strcmp(argv[argi], "--bend") == 0) {
+            *bend = 1;
+        } else if (strncmp(argv[argi], "--", 2) == 0) {
+            usage(argv[0]);
+        } else {
+            break;
+        }
+    }
+
+    return argi;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -69,51 +105,24 @@ main(int argc, char **argv)
     int16_t obuf[BUFFER_SIZE * 2];
     G722_DEC_CTX *g722_dctx;
     G722_ENC_CTX *g722_ectx;
-    int i, srate, ch, enc, bend;
+    int i, srate, enc, bend;
     int oblen;
+    int first_arg;
 
-    /* options descriptor */
-    static struct option longopts[] = {
-        { "sln16k", no_argument, NULL, 256 },
-        { "encode", no_argument, NULL, 257 },
-        { "bend",   no_argument, NULL, 258 },
-        { NULL,     0,           NULL,  0  }
-   };
+    first_arg = parse_options(argc, argv, &srate, &oblen, &enc, &bend);
 
-   srate = G722_SAMPLE_RATE_8000;
-   oblen = 1;
-   enc = bend = 0;
-   while ((ch = getopt_long(argc, argv, "", longopts, NULL)) != -1) {
-       switch (ch) {
-       case 256:
-           srate &= ~G722_SAMPLE_RATE_8000;
-           oblen = 2;
-           break;
-       case 257:
-           enc = 1;
-           break;
-       case 258:
-           bend = 1;
-           break;
-       default:
-           usage(argv[0]);
-       }
-    }
-    argc -= optind;
-    argv += optind;
-
-    if (argc != 2) {
-        usage(argv[-optind]);
+    if (argc - first_arg != 2) {
+        usage(argv[0]);
     }
 
-    fi = fopen(argv[0], "r");
+    fi = fopen(argv[first_arg], "rb");
     if (fi == NULL) {
-        fprintf(stderr, "cannot open %s\n", argv[0]);
+        fprintf(stderr, "cannot open %s\n", argv[first_arg]);
         exit (1);
     }
-    fo = fopen(argv[1], "w");
+    fo = fopen(argv[first_arg + 1], "wb");
     if (fo == NULL) {
-        fprintf(stderr, "cannot open %s\n", argv[1]);
+        fprintf(stderr, "cannot open %s\n", argv[first_arg + 1]);
         exit (1);
     }
 

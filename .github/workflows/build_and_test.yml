@@ -33,7 +33,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos, ubuntu]
+        os: [macos, ubuntu, windows]
 
     runs-on: ${{ matrix.os }}-latest
 
@@ -55,24 +55,41 @@ jobs:
         brew install bmake cmake
 
     - name: Build with GNU Make
+      if: matrix.os != 'windows'
       run: make clean all
 
     - name: Test with GNU Make
+      if: matrix.os != 'windows'
       run: make test
 
     - name: Build with BSD Make
+      if: matrix.os != 'windows'
       run: bmake clean all
 
     - name: Test with BSD Make
+      if: matrix.os != 'windows'
       run: bmake test
 
     - name: Build with CMake
+      env:
+        CMAKE_ARGS: ${{ matrix.os == 'windows' && '-DENABLE_STATIC_LIB=OFF -DG722_REQUIRE_TEST_SHELL=ON' || '-DCMAKE_BUILD_TYPE=Release' }}
       run: |
-        cmake -B build
-        make -C build clean all
+        cmake -S . -B build ${CMAKE_ARGS}
+        cmake --build build --config Release --clean-first
+      shell: bash
 
     - name: Test with CMake
-      run: bmake -C build test
+      run: ctest --test-dir build --build-config Release --output-on-failure
+      shell: bash
+
+    - name: Upload Windows DLL
+      if: matrix.os == 'windows'
+      uses: actions/upload-artifact@v4
+      with:
+        name: g722.dll
+        path: build/**/g722.dll
+        if-no-files-found: error
+        retention-days: 7
 
     - name: Build iOS Framework (macos)
       if: matrix.os == 'macos'
@@ -329,4 +346,5 @@ jobs:
     with:
       release_files_artifacts: |
         g722.xcframework
+        g722.dll
         ${{ needs.build_packages.outputs.dpkgs_artifacts }}

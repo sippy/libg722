@@ -1,0 +1,8 @@
+LIBRARY g722
+EXPORTS
+    g722_decoder_destroy
+    g722_decoder_new
+    g722_decode
+    g722_encoder_destroy
+    g722_encoder_new
+    g722_encode
