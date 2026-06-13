@@ -4,56 +4,57 @@
 
 ## Introduction
 
-The G.722 module is a bit exact implementation of the ITU G.722 specification
-for all three specified bit rates - 64000bps, 56000bps and 48000bps. It passes
-the ITU tests.
+The G.722 module is a bit-exact implementation of the ITU G.722 specification
+for all three specified bit rates: 64,000 bps, 56,000 bps and 48,000 bps. It
+passes the ITU tests.
 
-To allow fast and flexible interworking with narrow band telephony, the
-encoder and decoder support an option for the linear audio to be an 8k
-samples/second stream. In this mode the codec is considerably faster, and
+To allow fast and flexible interworking with narrowband telephony, the
+encoder and decoder support an option for the linear audio to be an 8 kHz
+stream. In this mode the codec is considerably faster, and
 still fully compatible with wideband terminals using G.722.
 
 ## History
 
 The code was originally written by Milton Anderson <milton@thumper.bellcore.com>
-from BELLCORE, and has been modified by the Chengxiang Lu and Alex Hauptmann
-from the Speech Group, School of Computer Science, Carnegie Mellon University,
-to be fairly fast and efficient, while retaining high fidelity.
+from BELLCORE, and was modified by Chengxiang Lu and Alex Hauptmann from the
+Speech Group, School of Computer Science, Carnegie Mellon University, to be
+fairly fast and efficient while retaining high fidelity.
 
 Steve Underwood <steveu@coppice.org> improved the code a lot later on and
 contributed it into several popular open source projects.
 
 Himanshu Soni <sonihimanshu@gmail.com> has adjusted some coefficients
-to avoid over/under-flows in the decoder.
+to avoid overflows and underflows in the decoder.
 
-Phil Schatzmann <phil.schatzmann@gmail.com> has added cmake-glue and Arduino
+Phil Schatzmann <phil.schatzmann@gmail.com> has added CMake glue and Arduino
 support.
 
-Librarized by Sippy Software, Inc.
+Packaged as libg722 by Sippy Software, Inc.
 
-## Build and Install library:
+## Build and Install Library
 
-### MacOS & Linux
+### macOS and Linux
 
-```
+```sh
 git clone https://github.com/sippy/libg722.git
 cmake -B libg722/build -S libg722
 make -C libg722/build clean all test install
 ```
 
-**Note for macOS users:** The library will be installed to `~/Library/libg722` by default. If you prefer a different location, you can specify it with:
-```
+**Note for macOS users:** The library will be installed to `~/Library/libg722`
+by default. If you prefer a different location, you can specify it with:
+```sh
 cmake -B libg722/build -S libg722 -DCMAKE_INSTALL_PREFIX=/your/preferred/path
 ```
 
 After installation, you may need to add the library path to your environment:
-```
+```sh
 export DYLD_LIBRARY_PATH="$HOME/Library/libg722/lib:$DYLD_LIBRARY_PATH"
 ```
 
 ### iOS
 
-```
+```sh
 git clone https://github.com/sippy/libg722.git
 cmake -B libg722/build-ios-device -S libg722 \
   -DCMAKE_SYSTEM_NAME=iOS \
@@ -63,31 +64,44 @@ cmake -B libg722/build-ios-device -S libg722 \
 make -C libg722/build-ios-device
 ```
 
-## Install Python module from PyPy:
+## Install Python Module With pip
 
-```
+The core package has no required NumPy dependency:
+
+```sh
 pip install G722
 ```
 
-## Build and Install Python module from source code:
+Install the optional NumPy decode backend with the `numpy` extra:
 
-```
-git clone https://github.com/sippy/libg722.git
-pip install libg722/
-```
-
-This builds the **core** package (`G722`) with no hard dependency on NumPy.
-To install NumPy decode support on demand:
-
-```
+```sh
 pip install "G722[numpy]"
 ```
 
-or:
+This installs `G722-numpy` at the same version as `G722`. You can also install
+the addon package directly:
 
-```
+```sh
 pip install G722-numpy
 ```
+
+## Build and Install Python Module From Source
+
+The default source build installs the core package:
+
+```sh
+git clone https://github.com/sippy/libg722.git
+pip install ./libg722
+```
+
+After installing the core package, build the optional NumPy backend from the
+same checkout:
+
+```sh
+LIBG722_PACKAGE_VARIANT=numpy-addon pip install ./libg722
+```
+
+## Python Build Options
 
 `LIBG722_BUILD_MODE` controls build profile for the main `G722` extension:
 - `production`: build with optimization (`-O2`, or `/O2` on Windows).
@@ -98,13 +112,27 @@ pip install G722-numpy
 - `core` (default): builds/publishes `G722`.
 - `numpy-addon`: builds/publishes `G722-numpy` from `python/G722_numpy_mod.c`.
 
+## Python API
+
 `G722(sample_rate, bit_rate, use_numpy=None)` accepts an optional `use_numpy` flag:
 - `True`: return NumPy arrays from `decode()` (raises if `G722-numpy` is not installed).
 - `False`: return Python `array('h')` from `decode()`.
-- omitted: auto-detect the optional backend and use NumPy when available, otherwise `array('h')`.
+- omitted or `None`: use the `G722-numpy` backend when installed, otherwise return `array('h')`.
 
-## Pull library into your Docker container:
-```
+## Pull Library Into Your Docker Container
+
+Published Docker images contain the installed library and public headers under
+`/usr/local`. The default-branch images are published with these tags:
+
+- `sippylabs/libg722:latest-debian_sid-slim`
+- `sippylabs/libg722:latest-debian_12-slim`
+- `sippylabs/libg722:latest-debian_13-slim`
+- `sippylabs/libg722:latest-ubuntu_latest`
+
+Branch, release, pull request and SHA tags use the same base-image suffixes,
+for example `<ref>-debian_12-slim`.
+
+```dockerfile
 ARG BASE_IMAGE=debian:sid-slim
 ARG LIBG722_IMAGE=sippylabs/libg722:latest-debian_sid-slim
 FROM ${LIBG722_IMAGE} AS libg722
