@@ -243,7 +243,6 @@ jobs:
 
     - name: Build SDist
       run: |
-        rm -rf dist
         python setup.py sdist
         LIBG722_PACKAGE_VARIANT=numpy-addon python setup.py sdist
 
