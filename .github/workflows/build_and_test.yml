@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
 
   schedule:
-    - cron: "0 0 * * *"
+    - cron: "15 1 * * 0"
 
 # added using https://github.com/step-security/secure-repo
 permissions:
