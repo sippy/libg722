@@ -118,6 +118,40 @@ def resolve_build_mode(repo_dir, version):
     return "debug" if has_diff else "production"
 
 
+def get_extension_flags(platform_name, build_mode):
+    is_win = platform_name.startswith('win')
+
+    if is_win:
+        if build_mode == "debug":
+            return {
+                "compile_args": ["/Zi", "/Od"],
+                "link_args": ["/DEBUG"],
+                "debug_cflags": ["/DDEBUG_MOD"],
+                "debug_link_args": [],
+            }
+        return {
+            "compile_args": ["/O2"],
+            "link_args": [],
+            "debug_cflags": ["/DDEBUG_MOD"],
+            "debug_link_args": [],
+        }
+
+    compile_args = ['-flto']
+    link_args = ['-flto']
+    if build_mode == "debug":
+        compile_args.extend(['-g3', '-O0'])
+        link_args.extend(['-g3', '-O0'])
+    else:
+        compile_args.append('-O2')
+        link_args.append('-O2')
+    return {
+        "compile_args": compile_args,
+        "link_args": link_args,
+        "debug_cflags": ['-DDEBUG_MOD'],
+        "debug_link_args": [],
+    }
+
+
 def main():
 
     mod_name = "G722"
@@ -180,30 +214,17 @@ def main():
         return
 
     build_mode = resolve_build_mode(repo_dir, version)
-    is_debug_build = build_mode == "debug"
-
     is_win = get_platform().startswith('win')
     is_mac = get_platform().startswith('macosx-')
 
-    compile_args = []
-    if not is_win:
-        compile_args.append('-flto')
-    link_args = ['-flto',] if not is_win else []
-    if is_debug_build:
-        compile_args.extend(['-g3', '-O0'])
-        link_args.extend(['-g3', '-O0'])
-    else:
-        compile_args.append('/O2' if is_win else '-O2')
-        if not is_win:
-            link_args.append('-O2')
+    flags = get_extension_flags(get_platform(), build_mode)
+    compile_args = flags["compile_args"]
+    link_args = flags["link_args"]
     if not is_mac and not is_win:
         smap_fname = path_join(py_src_dir, "symbols.map")
         link_args.append(f'-Wl,--version-script={smap_fname}')
-    debug_cflags = ['-DDEBUG_MOD']
-    debug_link_args = []
-    if is_debug_build:
-        debug_cflags = ['-g3', '-O0', '-DDEBUG_MOD']
-        debug_link_args = ['-g3', '-O0']
+    debug_cflags = flags["debug_cflags"]
+    debug_link_args = flags["debug_link_args"]
     mod_common_args = {
         'sources': [
             path_join(py_src_dir, mod_fname),
