@@ -200,7 +200,7 @@ jobs:
     - build_test_python
     - cache_qemu_image
     - cache_buildkit_image
-    uses: sippy/cimagic/.github/workflows/BuildPythonWheels.yml@v3
+    uses: sippy/cimagic/.github/workflows/BuildPythonWheels.yml@wip
     with:
       maximize_space: true
       qemu_image_cache_key: ${{ needs.cache_qemu_image.outputs.image-cache-key }}
