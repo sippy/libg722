@@ -31,6 +31,9 @@ RUN ${PYTHON_CMD} -m build --wheel
 RUN LIBG722_PACKAGE_VARIANT=numpy-addon ${PYTHON_CMD} -m build --wheel
 RUN auditwheel repair dist/*.whl --wheel-dir dist_out
 
+RUN --mount=type=bind,source=scripts/build,target=scripts/build \
+ ${PYTHON_CMD} scripts/build/prune_pip_wheels.py
+
 FROM build AS test
 RUN ${PYTHON_CMD} -m pip install dist_out/*.whl
 RUN ${PYTHON_CMD} -m unittest discover -v -s tests -p '*.py'
