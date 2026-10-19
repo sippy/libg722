@@ -338,7 +338,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        base_image: ['debian:sid-slim', 'debian:12-slim', 'debian:13-slim', 'ubuntu:latest']
+        base_image: ['debian:sid-slim', 'debian:12-slim', 'debian:13-slim', 'ubuntu:24.04', 'ubuntu:latest']
     env:
       DOCKER_REPO: sippylabs/libg722
       BASE_IMAGE: ${{ matrix.base_image }}
